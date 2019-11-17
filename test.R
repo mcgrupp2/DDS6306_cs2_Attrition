@@ -11,8 +11,8 @@ library(GGally)
 
 #Read the raw csv with attrition and salaries
 
-raw_df <- read.csv("CaseStudy2-data.csv")
-#raw_df 
+raw_df <- read.csv("attritApp/data/CaseStudy2-data.csv")
+raw_df 
 
 #No missing vals
 gg_miss_var(raw_df)
