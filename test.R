@@ -42,8 +42,7 @@ raw_df %>% ggplot(aes(x=WorkLifeBalance, y=JobSatisfaction)) + geom_jitter()
 
 #Maybe do some k-means to find clusters?
 
-
-
+#Make shiny app with multiselect input to do
 
 # small function to display plots only if it's interactive
 p_ <- GGally::print_if_interactive
@@ -58,6 +57,35 @@ p_(pm)
 
 glly_df <- raw_df[,c(2, 5, 7, 13, 15, 16, 17, 19, 20, 21, 22, 23, 27, 28, 30)]
 ggpairs(glly_df)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#~~~~~~~~~~~~~~Dendrogram-------------------------
+
+
 
 iris2 <- iris[,-5]
 
