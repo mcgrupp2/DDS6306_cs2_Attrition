@@ -1,13 +1,13 @@
 library(shiny)
-install.packages("shinythemes")
+#install.packages("shinythemes")
 library(shinythemes)
 
 fluidPage(
 
 tagList(
-  shinythemes::themeSelector(),
+  #shinythemes::themeSelector(),
   navbarPage(
-    # theme = "cerulean",  # <--- To use a theme, uncomment this
+    theme = shinytheme("yeti"),  # <--- To use a theme, uncomment this
     "shinythemes",
     tabPanel("Navbar 1",
              sidebarPanel(
