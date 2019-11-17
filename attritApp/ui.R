@@ -1,7 +1,17 @@
+library(tidyverse)
 library(shiny)
 #install.packages("shinythemes")
 library(shinythemes)
 
+#source("attritApp/server.R")
+
+#dataset <- read.csv("attritApp/data/CaseStudy2-data.csv")
+#names(dataset)
+#getwd()
+
+
+raw_df <- read.csv("attritApp/data/CaseStudy2-data.csv")
+#raw_df
 fluidPage(
 
 tagList(
@@ -11,17 +21,21 @@ tagList(
     "shinythemes",
     tabPanel("Navbar 1",
              sidebarPanel(
-               fileInput("file", "File input:"),
-               textInput("txt", "Text input:", "general"),
-               sliderInput("slider", "Slider input:", 1, 100, 30),
-               tags$h5("Deafult actionButton:"),
-               actionButton("action", "Search"),
+               #fileInput("file", "File input:"),
+               selectizeInput(
+                 'e2', '2. Multi-select', choices = names(raw_df), multiple = TRUE
+               ),
+               #textInput("txt", "Text input:", "general"),
+               #sliderInput("slider", "Slider input:", 1, 100, 30),
+               #tags$h5("Deafult actionButton:"),
+               #actionButton("action", "Search"),
                
-               tags$h5("actionButton with CSS class:"),
-               actionButton("action2", "Action button", class = "btn-primary")
+               #tags$h5("actionButton with CSS class:"),
+               #actionButton("action2", "Action button", class = "btn-primary")
              ),
              mainPanel(
                tabsetPanel(
+                 #~~~~~~~~This is the tabset panel 
                  tabPanel("Tab 1",
                           h4("Table"),
                           tableOutput("table"),
