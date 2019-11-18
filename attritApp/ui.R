@@ -25,7 +25,7 @@ tagList(
              sidebarPanel(
                #fileInput("file", "File input:"),
                selectizeInput(
-                 'e2', '2. Multi-select', choices = names(dataset), multiple = TRUE
+                 'colIns', '2. Multi-select', choices = names(dataset), multiple = TRUE
                ),
                #textInput("txt", "Text input:", "general"),
                #sliderInput("slider", "Slider input:", 1, 100, 30),
@@ -39,15 +39,19 @@ tagList(
                tabsetPanel(
                  #~~~~~~~~This is the tabset panel 
                  tabPanel("Tab 1",
-                          h4("Table"),
-                          #tableOutput("table"),
-                          h4("Verbatim text output"),
-                          verbatimTextOutput("txtout"),
-                          h1("Header 1"),
-                          h2("Header 2"),
-                          h3("Header 3"),
-                          h4("Header 4"),
-                          h5("Header 5")
+                          #h4("Table"),
+                          ##tableOutput("table"),
+                          #h4("Verbatim text output"),
+                          #verbatimTextOutput("colnames"),
+                          #h1("Header 1"),
+                          #h2("Header 2"),
+                          #h3("Header 3"),
+                          #h4("Header 4"),
+                          #h5("Header 5")
+                          
+                          
+                          
+                          
                  ),
                  tabPanel("Tab 2", 
                           dataTableOutput("table")),
@@ -81,7 +85,30 @@ tagList(
                )
              )
     ),
-    tabPanel("Navbar 2", names(df)),
-    tabPanel("Navbar 3", "This panel is intentionally left blank")
+    tabPanel("Navbar 2",   
+             headerPanel('k-means clustering'),
+             sidebarPanel(
+               selectInput('xcol', 'X Variable', names(dataset)),
+               selectInput('ycol', 'Y Variable', names(dataset),
+                           selected=names(dataset)[[2]]),
+               numericInput('clusters', 'Cluster count', 2,
+                            min = 1, max = 9)
+             ),
+             mainPanel(
+               plotOutput('plot1')
+             )),
+    tabPanel("Navbar 3", 
+             headerPanel('k-means clustering'),
+             sidebarPanel(
+               #selectInput('xcol', 'X Variable', names(dataset)),
+               #selectInput('ycol', 'Y Variable', names(dataset),
+               #            selected=names(dataset)[[2]]),
+               #numericInput('clusters', 'Cluster count', 2,
+               #             min = 1, max = 9)
+             ),
+             mainPanel(
+               plotOutput('plot2')
+             ) 
+             )
   )
 ))
