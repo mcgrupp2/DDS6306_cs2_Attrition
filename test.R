@@ -8,7 +8,7 @@
 #install.packages("mlbench")
 #install.packages("fastDummies")
 #install.packages("xgboost")
-
+install.packages("clustMixType")
 
 library(plyr)
 library(tidyverse)
@@ -19,7 +19,7 @@ library(e1071)
 library(mlbench)
 library(fastDummies)
 library(xgboost)
-
+library(clustMixType)
 
 #Read the raw csv with attrition and salaries
 
@@ -69,27 +69,6 @@ p_(pm)
 
 glly_df <- raw_df[,c(2, 5, 7, 13, 15, 16, 17, 19, 20, 21, 22, 23, 27, 28, 30)]
 ggpairs(glly_df)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -278,26 +257,25 @@ names(pd_df)
 #p_df
 
 
+ggpairs(pd_df)
+
 pd_mx <- data.matrix(pd_df)
 
 
-t_splt <- round(dim(pd_df)[[1]] * .7)
+t_splt <- sample(seq(1:(dim(pd_df)[[1]])), (round(dim(pd_df)[[1]] * .7)))
 
 #t_splt
 
-train_data <- pd_mx[1:t_splt,]
+train_data <- pd_mx[t_splt,]
 
-
-test_data <- pd_mx[-(1:t_splt),]
-#test_data
-
-as.numeric(raw_df[1:t_splt, 3])
-
-train_labels <- sapply(raw_df[1:t_splt, 3], function(x) ifelse(x == "Yes", 1, 0))
+train_labels <- sapply(raw_df[t_splt, 3], function(x) ifelse(x == "Yes", 1, 0))
 
 train_labels
 
-test_labels <- sapply(raw_df[-(1:t_splt), 3], function(x) ifelse(x == "Yes", 1, 0))
+
+test_data <- pd_mx[-(t_splt),]
+
+test_labels <- sapply(raw_df[-(t_splt), 3], function(x) ifelse(x == "Yes", 1, 0))
 
 test_labels
 
@@ -320,12 +298,14 @@ print(paste("test-error=", err))
 negative_cases <- sum(train_labels == FALSE)
 postive_cases <- sum(train_labels == TRUE)
 
+negative_cases
+
 model_tuned <- xgboost(data = dtrain, # the data           
-                       max.depth = 3, # the maximum depth of each decision tree
-                       nround = 110, # number of boosting rounds
-                       early_stopping_rounds = 20, 
+                       max.depth = 5, # the maximum depth of each decision tree
+                       nround = 10000, # number of boosting rounds
+                       early_stopping_rounds = 10, 
                        eval_metric = "auc",# if we dont see an improvement in this many rounds, stop
-                       objective = "binary:logistic")#, # the objective function
+                       objective = "binary:logistic") # the objective function
                        #scale_pos_weight = negative_cases/postive_cases) # control for imbalanced classes
 
 # generate predictions for our held-out testing data
@@ -333,6 +313,13 @@ pred <- predict(model_tuned, dtest)
 
 pred
 
+confusionMatrix(table(as.numeric(pred > 0.5), test_labels))
+
+as.numeric(pred > 0.5)
+
+mean(as.numeric(pred > 0.5))
+
+test_labels
 
 # get & print the classification error
 err <- mean(as.numeric(pred > 0.5) != test_labels)
@@ -345,6 +332,63 @@ importance_matrix <- xgb.importance(names(pd_mx), model = model)
 xgb.plot.importance(importance_matrix)
 
 
+
+
+#~~~~~~~~~~~~~~HYPERTUNING
+
+
+set.seed(1)
+iterations = 500
+numks = 60
+splitPerc = .8
+masterAcc = matrix(nrow = iterations, ncol = numks)
+for(j in 1:iterations)
+{
+  trainIndices = sample(1:dim(iris)[1],round(splitPerc * dim(iris)[1]))
+  train = iris[trainIndices,]
+  test = iris[-trainIndices,]
+  for(i in 1:numks)
+  {
+    classifications = knn(train[,c(1,3)],test[,c(1,3)],train$Species, prob = TRUE, k = i)
+    table(classifications,test$Species)
+    CM = confusionMatrix(table(classifications,test$Species))
+    masterAcc[j,i] = CM$overall[1]
+  }
+  
+}
+MeanAcc = colMeans(masterAcc)
+plot(seq(1,numks,1),MeanAcc, type = "l")
+which.max(MeanAcc)
+max(MeanAcc)
+
+
+raw_df
+
+#proto_df <- cbind(raw)
+
+# apply k prototyps
+
+kpres <- kproto(fs_df, 5)
+
+protoPrdct <- predict(kpres, dtest)
+
+# Check for the optimal number of clusters given the data
+
+mydata <- fs_df
+wss<-vector()
+for (i in 2:15){ wss[i] <- sum(kproto(fs_df, i)$withinss)}
+par(mfrow=c(1,1))
+plot(1:15, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares",
+     main="Assessing the Optimal Number of Clusters with the Elbow Method",
+     pch=20, cex=2)
+
+## plots between Total and other numerical Attributes with clusters: 
+#par(mfrow=c(1,2))
+#
+#for(i in 1: 1:6){
+#  plot(pokemon[,c(5,5+i)], col=pokemon$cluster, main="K-prototypes")
+#}
 
 
 
