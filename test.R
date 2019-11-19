@@ -187,7 +187,7 @@ names(f_df)[[5]] <- "EnvironmentSatisfaction"
 names(f_df)[[6]] <-  "HourlyRate"
 names(f_df)[[9]] <- "JobSatisfaction"
 
-#names(f_df)
+names(f_df)
 
 #fs_df <- dummyVars(" ~ .", data = fs_df)
 
@@ -215,11 +215,17 @@ gg_miss_var(correlationMatrix)
 
 gg_miss_var(as.data.frame(correlationMatrix))
 
-highlyCorrelated <- findCorrelation(correlationMatrix, cutoff = 0.5)
+highlyCorrelated <- findCorrelation(correlationMatrix, cutoff = 0.75)#, names = TRUE)
+
+correlationMatrix[highlyCorrelated,]
 
 print(highlyCorrelated)
 
-print(correlationMatrix[highlyCorrelated,])
+print(f_df[,highlyCorrelated])
+
+print(f_df[,-(highlyCorrelated)])
+
+f_df <- f_df[,-(highlyCorrelated)]
 
 
 tmp_df <- cbind(f_df, raw_df[,])
@@ -253,6 +259,13 @@ results <- rfe(f_df, raw_df[,3], sizes=c(1:50), rfeControl=control)
 print(results)
 # list the chosen features
 predictors(results)
+
+p_inx <- predictors(results)
+
+pd_df <- f_df[,p_inx]
+
+pd_df
+
 # plot the results
 plot(results, type=c("g", "o"))
 
@@ -260,30 +273,76 @@ p_df <- f_df[,results$variables[1:26,4]]
 
 
 
-names(f_df)
+names(pd_df)
 
-p_df
-
-
-m_df <- data.matrix(p_df)
+#p_df
 
 
-t_splt <- round(dim(p_df)[[1]] * .7)
+pd_mx <- data.matrix(pd_df)
+
+
+t_splt <- round(dim(pd_df)[[1]] * .7)
 
 #t_splt
 
-train_data <- m_df[1:t_splt,]
-#train_data
+train_data <- pd_mx[1:t_splt,]
 
-test_data <- m_df[-(1:t_splt),]
+
+test_data <- pd_mx[-(1:t_splt),]
 #test_data
+
+as.numeric(raw_df[1:t_splt, 3])
+
+train_labels <- sapply(raw_df[1:t_splt, 3], function(x) ifelse(x == "Yes", 1, 0))
+
+train_labels
+
+test_labels <- sapply(raw_df[-(1:t_splt), 3], function(x) ifelse(x == "Yes", 1, 0))
+
+test_labels
 
 #diseaseInfo <- diseaseInfo[sample(1:nrow(diseaseInfo)), ]
 
-#dtrain <- xgb.D
+dtrain <- xgb.DMatrix(data = train_data, label = train_labels)
 
 
+dtest <- xgb.DMatrix(data = test_data, label = test_labels)
 
+
+model <- xgboost(data = dtrain, nround = 2, objective = "binary:logistic")  
+
+pred <- predict(model, dtest)
+
+# get & print the classification error
+err <- mean(as.numeric(pred > 0.5) != test_labels)
+print(paste("test-error=", err))
+
+negative_cases <- sum(train_labels == FALSE)
+postive_cases <- sum(train_labels == TRUE)
+
+model_tuned <- xgboost(data = dtrain, # the data           
+                       max.depth = 3, # the maximum depth of each decision tree
+                       nround = 110, # number of boosting rounds
+                       early_stopping_rounds = 20, 
+                       eval_metric = "auc",# if we dont see an improvement in this many rounds, stop
+                       objective = "binary:logistic")#, # the objective function
+                       #scale_pos_weight = negative_cases/postive_cases) # control for imbalanced classes
+
+# generate predictions for our held-out testing data
+pred <- predict(model_tuned, dtest)
+
+pred
+
+
+# get & print the classification error
+err <- mean(as.numeric(pred > 0.5) != test_labels)
+print(paste("test-error=", err))
+
+
+importance_matrix <- xgb.importance(names(pd_mx), model = model)
+
+# and plot it!
+xgb.plot.importance(importance_matrix)
 
 
 
