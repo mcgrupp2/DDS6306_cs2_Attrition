@@ -8,7 +8,7 @@
 #install.packages("mlbench")
 #install.packages("fastDummies")
 #install.packages("xgboost")
-install.packages("clustMixType")
+#install.packages("clustMixType")
 
 library(plyr)
 library(tidyverse)
@@ -20,6 +20,7 @@ library(mlbench)
 library(fastDummies)
 library(xgboost)
 library(clustMixType)
+library(class)
 
 #Read the raw csv with attrition and salaries
 
@@ -134,6 +135,8 @@ set.seed(22)
 
 fs_df <- cbind(raw_df[,2], raw_df[,4:36])
 
+# Create dummy columns for categorical data
+
 fs_df <- dummy_cols(fs_df)
 
 fs_df
@@ -143,6 +146,8 @@ dim(fs_df)
 
 
 names(fs_df)
+
+# Remove categorical cols, replaced with dummies
 
 f_df <- cbind(fs_df[,1],    
               fs_df[,3],
@@ -155,6 +160,7 @@ f_df <- cbind(fs_df[,1],
               fs_df[,24:25],
               fs_df[,27:60],
               fs_df[,62:63]) 
+
 
 dim(f_df) 
 
@@ -188,7 +194,7 @@ names(f_df)
 
 #~~~~~~~~~~~~~~~~~~~~~~~Remove Redundant Features
 
-correlationMatrix <- cor(f_df)#use="pairwise.complete.obs")
+correlationMatrix <- cor(f_df, use="pairwise.complete.obs")
 
 gg_miss_var(correlationMatrix)
 
@@ -196,7 +202,7 @@ gg_miss_var(as.data.frame(correlationMatrix))
 
 highlyCorrelated <- findCorrelation(correlationMatrix, cutoff = 0.75)#, names = TRUE)
 
-correlationMatrix[highlyCorrelated,]
+#correlationMatrix[highlyCorrelated,]
 
 print(highlyCorrelated)
 
@@ -207,7 +213,7 @@ print(f_df[,-(highlyCorrelated)])
 f_df <- f_df[,-(highlyCorrelated)]
 
 
-tmp_df <- cbind(f_df, raw_df[,])
+#tmp_df <- cbind(f_df, raw_df[,])
 
 
 
@@ -243,7 +249,7 @@ p_inx <- predictors(results)
 
 pd_df <- f_df[,p_inx]
 
-pd_df
+dim(pd_df)
 
 # plot the results
 plot(results, type=c("g", "o"))
@@ -287,22 +293,22 @@ dtrain <- xgb.DMatrix(data = train_data, label = train_labels)
 dtest <- xgb.DMatrix(data = test_data, label = test_labels)
 
 
-model <- xgboost(data = dtrain, nround = 2, objective = "binary:logistic")  
+#model <- xgboost(data = dtrain, nround = 2, objective = "binary:logistic")  
 
-pred <- predict(model, dtest)
+#pred <- predict(model, dtest)
 
 # get & print the classification error
-err <- mean(as.numeric(pred > 0.5) != test_labels)
-print(paste("test-error=", err))
+#err <- mean(as.numeric(pred > 0.5) != test_labels)
+#print(paste("test-error=", err))
 
-negative_cases <- sum(train_labels == FALSE)
-postive_cases <- sum(train_labels == TRUE)
+#negative_cases <- sum(train_labels == FALSE)
+#postive_cases <- sum(train_labels == TRUE)
 
-negative_cases
+#negative_cases
 
 model_tuned <- xgboost(data = dtrain, # the data           
                        max.depth = 5, # the maximum depth of each decision tree
-                       nround = 10000, # number of boosting rounds
+                       nround = 200, # number of boosting rounds
                        early_stopping_rounds = 10, 
                        eval_metric = "auc",# if we dont see an improvement in this many rounds, stop
                        objective = "binary:logistic") # the objective function
@@ -326,7 +332,7 @@ err <- mean(as.numeric(pred > 0.5) != test_labels)
 print(paste("test-error=", err))
 
 
-importance_matrix <- xgb.importance(names(pd_mx), model = model)
+importance_matrix <- xgb.importance(names(pd_mx), model = model_tuned)
 
 # and plot it!
 xgb.plot.importance(importance_matrix)
@@ -337,21 +343,28 @@ xgb.plot.importance(importance_matrix)
 #~~~~~~~~~~~~~~HYPERTUNING
 
 
-set.seed(1)
+set.seed(22)
 iterations = 500
 numks = 60
-splitPerc = .8
+splitPerc = .7
 masterAcc = matrix(nrow = iterations, ncol = numks)
 for(j in 1:iterations)
 {
-  trainIndices = sample(1:dim(iris)[1],round(splitPerc * dim(iris)[1]))
-  train = iris[trainIndices,]
-  test = iris[-trainIndices,]
+  trainIndices = sample(1:dim(pd_df)[1],round(splitPerc * dim(pd_df)[1]))
+  train = pd_df[trainIndices,]
+  test = pd_df[-trainIndices,]
+  dim(train)
+  dim(test)
+  length(cl)
+  cl = raw_df[trainIndices, 3]
   for(i in 1:numks)
   {
-    classifications = knn(train[,c(1,3)],test[,c(1,3)],train$Species, prob = TRUE, k = i)
-    table(classifications,test$Species)
-    CM = confusionMatrix(table(classifications,test$Species))
+    classifications = knn.cv(train, 
+                             #test, 
+                             cl, 
+                             prob = TRUE, k = i)
+    table(classifications,cl)
+    CM = confusionMatrix(table(classifications, cl))
     masterAcc[j,i] = CM$overall[1]
   }
   
@@ -370,7 +383,11 @@ raw_df
 
 kpres <- kproto(fs_df, 5)
 
-protoPrdct <- predict(kpres, dtest)
+summary(kpres)
+
+protoPrdct <- predict(kpres, fs_df)
+
+protoPrdct
 
 # Check for the optimal number of clusters given the data
 
