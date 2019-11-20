@@ -147,9 +147,10 @@ dim(fs_df)
 
 names(fs_df)
 
-# Remove categorical cols, replaced with dummies
+# Remove categorical cols, replaced with dummies, result removed as well, can uncomment
 
-f_df <- cbind(fs_df[,1],    
+f_df <- cbind(fs_df[,1],
+              #fs_df[,2],
               fs_df[,3],
               fs_df[,5:6],   
               fs_df[,10],    
@@ -196,7 +197,7 @@ names(f_df)
 
 correlationMatrix <- cor(f_df, use="pairwise.complete.obs")
 
-gg_miss_var(correlationMatrix)
+#gg_miss_var(correlationMatrix)
 
 gg_miss_var(as.data.frame(correlationMatrix))
 
@@ -254,7 +255,7 @@ dim(pd_df)
 # plot the results
 plot(results, type=c("g", "o"))
 
-p_df <- f_df[,results$variables[1:26,4]]
+#p_df <- f_df[,results$variables[1:26,4]]
 
 
 
@@ -264,6 +265,10 @@ names(pd_df)
 
 
 ggpairs(pd_df)
+
+# Retry with f_df, make model a function easy
+
+#~~~~~~~~~~~~~~~~~Fxn~~~~~~~~~~~~~~
 
 pd_mx <- data.matrix(pd_df)
 
@@ -285,26 +290,12 @@ test_labels <- sapply(raw_df[-(t_splt), 3], function(x) ifelse(x == "Yes", 1, 0)
 
 test_labels
 
-#diseaseInfo <- diseaseInfo[sample(1:nrow(diseaseInfo)), ]
+
 
 dtrain <- xgb.DMatrix(data = train_data, label = train_labels)
 
 
 dtest <- xgb.DMatrix(data = test_data, label = test_labels)
-
-
-#model <- xgboost(data = dtrain, nround = 2, objective = "binary:logistic")  
-
-#pred <- predict(model, dtest)
-
-# get & print the classification error
-#err <- mean(as.numeric(pred > 0.5) != test_labels)
-#print(paste("test-error=", err))
-
-#negative_cases <- sum(train_labels == FALSE)
-#postive_cases <- sum(train_labels == TRUE)
-
-#negative_cases
 
 model_tuned <- xgboost(data = dtrain, # the data           
                        max.depth = 5, # the maximum depth of each decision tree
@@ -337,10 +328,11 @@ importance_matrix <- xgb.importance(names(pd_mx), model = model_tuned)
 # and plot it!
 xgb.plot.importance(importance_matrix)
 
+#~~~~~~~~~~~~~~~~~~~~~~End Fxn~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-
-#~~~~~~~~~~~~~~HYPERTUNING
+#~~~~~~~~~~~~~~HYPERTUNING knn.cv, something funny about model, only got 84%, but sensitivity is jacked up, need to 
+#~~~~~~~~~~~~Pull tuning loop out to cycle xgboost
 
 
 set.seed(22)
