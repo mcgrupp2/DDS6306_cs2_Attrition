@@ -345,9 +345,9 @@ for(j in 1:iterations)
   trainIndices = sample(1:dim(pd_df)[1],round(splitPerc * dim(pd_df)[1]))
   train = pd_df[trainIndices,]
   test = pd_df[-trainIndices,]
-  dim(train)
-  dim(test)
-  length(cl)
+  #dim(train)
+  #dim(test)
+  #length(cl)
   cl = raw_df[trainIndices, 3]
   for(i in 1:numks)
   {
