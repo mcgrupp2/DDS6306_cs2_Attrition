@@ -9,6 +9,7 @@
 #install.packages("fastDummies")
 #install.packages("xgboost")
 #install.packages("clustMixType")
+install.packages("mlr")
 
 library(plyr)
 library(tidyverse)
@@ -21,6 +22,8 @@ library(fastDummies)
 library(xgboost)
 library(clustMixType)
 library(class)
+library(mlr)
+
 
 #Read the raw csv with attrition and salaries
 
@@ -156,7 +159,7 @@ f_df <- cbind(fs_df[,1],
               fs_df[,13:14], 
               fs_df[,16],    
               fs_df[,18:20], 
-              fs_df[,24:25],
+              fs_df[,23:25],
               fs_df[,27:60],
               fs_df[,62:63]) 
 
@@ -234,6 +237,19 @@ minMonthlyRate
 MonthlyRate_rng
 
 
+maxPercentSalaryHike <- max(raw_df$PercentSalaryHike)
+
+minPercentSalaryHike <- min(raw_df$PercentSalaryHike)
+
+PercentSalaryHike_rng <- maxPercentSalaryHike - minPercentSalaryHike
+
+maxPercentSalaryHike
+
+minPercentSalaryHike
+
+PercentSalaryHike_rng
+
+
 
 
 
@@ -263,11 +279,22 @@ MonthlyRate_rng
 # Plug names in here
 
 
-colm <- c("DailyRate","MonthlyRate", "MonthlyIncome")
+#colr <- c("DailyRate","MonthlyRate", "MonthlyIncome", "HourlyRate")
 
-base_scaled_df <- f_df %>% mutate_at(vars(colm), list(~scale(.) %>% as.vector))
+cola <- c("DailyRate", "DistanceFromHome", "HourlyRate", "MonthlyIncome", "MonthlyRate",      
+          "PercentSalaryHike", "TotalWorkingYears", "YearsAtCompany", "YearsInCurrentRole", 
+          "YearsSinceLastPromotion", "YearsWithCurrManager")
 
-base_scaled_df
+#base_scaled_df <- f_df %>% mutate_at(vars(colr), list(~scale(.) %>% as.vector))
+
+#base_scaled_df
+
+all_scaled_df <- f_df %>% mutate_at(vars(cola), list(~scale(.) %>% as.vector))
+
+all_scaled_df
+
+
+#Scale additional features
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -348,23 +375,23 @@ data.Normalization (x,type="n0",normalization="column")
 
 #~~~~~~~~~~~~~~~~~~~~~~~Remove Redundant Features
 
-correlationMatrix <- cor(base_scaled_df, use="pairwise.complete.obs")
+correlationMatrix <- cor(all_scaled_df, use="pairwise.complete.obs")
 
 #gg_miss_var(correlationMatrix)
 
 gg_miss_var(as.data.frame(correlationMatrix))
 
-highlyCorrelated <- findCorrelation(correlationMatrix, cutoff = 0.7)#, names = TRUE)
+highlyCorrelated <- findCorrelation(correlationMatrix, cutoff = 0.75)#, names = TRUE)
 
 #correlationMatrix[highlyCorrelated,]
 
 print(highlyCorrelated)
 
-print(f_df[,highlyCorrelated])
+print(all_scaled_df[,highlyCorrelated])
 
-print(f_df[,-(highlyCorrelated)])
+print(all_scaled_df[,-(highlyCorrelated)])
 
-f_df <- f_df[,-(highlyCorrelated)]
+f_df <- all_scaled_df[,-(highlyCorrelated)]
 
 
 #tmp_df <- cbind(f_df, raw_df[,])
@@ -393,7 +420,7 @@ set.seed(22)
 
 control <- rfeControl(functions=rfFuncs, method="cv", number=10)
 # run the RFE algorithm
-results <- rfe(base_scaled_df, raw_df[,3], sizes=c(1:42), rfeControl=control)
+results <- rfe(f_df, raw_df[,3], sizes=c(1:42), rfeControl=control)
 # summarize the results
 print(results)
 # list the chosen features
@@ -438,7 +465,21 @@ train_data <- pd_mx[t_splt,]
 
 train_labels <- sapply(raw_df[t_splt, 3], function(x) ifelse(x == "Yes", 1, 0))
 
-train_labels
+
+#label <- as.numeric(dtrain[[33]])
+
+#data <- as.matrix(dtrain[2:31])
+
+#weight <- as.numeric(dtrain[[32]]) * testsize / length(label)
+
+#sumwpos <- sum(weight * (label==1.0))
+
+#sumwneg <- sum(weight * (label==0.0))
+
+
+
+#sum(test_labels == 1)/length(test_labels)
+
 
 
 test_data <- pd_mx[-(t_splt),]
@@ -462,14 +503,43 @@ dtest <- xgb.DMatrix(data = test_data, label = test_labels)
 #                       objective = "binary:logistic") # the objective function
 #                       #scale_pos_weight = negative_cases/postive_cases) # control for imbalanced classes
 
-model_tuned <- xgb.train(data = dtrain, # the data           
-                       max.depth = 10, # the maximum depth of each decision tree
+
+negative_cases <- pd_mx %>% filter()
+
+
+
+
+positive_cases <- (sum(train_labels == 1) + sum(test_labels == 1))
+
+negative_cases <- (sum(train_labels == 0) + sum(test_labels == 0))
+
+print(paste("weight statistics: wpos=", positive_cases, "wneg=", negative_cases, "ratio=", negative_cases / positive_cases))
+
+
+#/(length(train_labels) + length(test_labels))
+
+
+
+
+
+
+
+
+
+
+
+#~~~~~~~~~~~~ Normal XGBOOST
+
+model_tuned <- xgboost(data = dtrain, # the data           
+                       max.depth = 5, # the maximum depth of each decision tree
                        nround = 200, # number of boosting rounds
                        early_stopping_rounds = 10, 
-                       eval_metric = "auc",# if we dont see an improvement in this many rounds, stop
-                       objective = "binary:logistic")#,
+                       eval_metric = "auc",
+                       objective = "binary:logistic",
+                       print_every_n = 5,
+                       scale_pos_weight = negative_cases/positive_cases)
                        #watchlist = list(train = dtrain)) # the objective function
-#scale_pos_weight = negative_cases/postive_cases) # control for imbalanced classes
+ # control for imbalanced classes
 
 # generate predictions for our held-out testing data
 pred <- predict(model_tuned, dtest)
@@ -495,6 +565,226 @@ importance_matrix <- xgb.importance(names(pd_mx), model = model_tuned)
 xgb.plot.importance(importance_matrix)
 
 #~~~~~~~~~~~~~~~~~~~~~~End Fxn~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+#~~~~~~~~~~~~~~~~ HyperTuning XGBoost~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# https://www.hackerearth.com/practice/machine-learning/machine-learning-algorithms/beginners-tutorial-on-xgboost-parameter-tuning-r/tutorial/
+
+
+
+hp_df <- pd_df
+#pd_mx <- data.matrix(f_df)
+#pd_mx <- data.matrix(base_scaled_df)
+
+
+t_splt <- sample(seq(1:(dim(pd_df)[[1]])), (round(dim(pd_df)[[1]] * .7)))
+#t_splt <- sample(seq(1:(dim(f_df)[[1]])), (round(dim(f_df)[[1]] * .7)))
+#t_splt <- sample(seq(1:(dim(base_scaled_df)[[1]])), (round(dim(base_scaled_df)[[1]] * .7)))
+
+#t_splt
+
+hp_train_data_raw <- pd_df[t_splt,]
+
+hp_train_labels <- sapply(raw_df[t_splt, 3], function(x) ifelse(x == "Yes", 1, 0))
+
+hp_train_labels
+
+hp_test_data_raw <- pd_df[t_splt,]
+
+hp_test_labels <- sapply(raw_df[t_splt, 3], function(x) ifelse(x == "Yes", 1, 0))
+
+hp_test_labels
+
+
+
+
+hp_train_data <- as.data.frame(cbind(hp_train_data_raw, as.factor(hp_train_labels)))
+
+names(hp_train_data_raw)
+
+
+
+hp_test_data <- as.data.frame(cbind(hp_test_data_raw, as.factor(hp_test_labels)))
+
+names(hp_test_data)
+
+
+
+
+names(train_data)
+
+cbind(train_data, train_labels)
+
+names(hp_train_data)
+
+names(hp_train_data)[[6]] <- c("JobRoleSalesRepresentative")
+
+names(hp_train_data)[[15]] <- c("JobRole_ResearchDirector")
+
+names(hp_train_data)[[17]] <- c("JobRole_ManufacturingDirector")
+
+names(hp_train_data)[[20]] <- c("JobRole_SalesExecutive")
+
+names(hp_train_data)[[22]] <- c("EducationField_HumanResources")
+
+names(hp_train_data)[[24]] <- c("train_labels")
+
+names(hp_test_data)[[6]] <- c("JobRoleSalesRepresentative")
+
+names(hp_test_data)[[15]] <- c("JobRole_ResearchDirector")
+
+names(hp_test_data)[[17]] <- c("JobRole_ManufacturingDirector")
+
+names(hp_test_data)[[20]] <- c("JobRole_SalesExecutive")
+
+names(hp_test_data)[[22]] <- c("EducationField_HumanResources")
+
+names(hp_test_data)[[24]] <- c("test_labels")
+
+dim(hp_train_data)
+
+traintask <- makeClassifTask (data = hp_train_data, target = "train_labels")
+
+
+testtask <- makeClassifTask (data = hp_test_data, target = "test_labels")
+
+
+makeTask 
+
+
+#create learner
+lrn <- makeLearner("classif.xgboost", predict.type = "response")
+
+lrn$par.vals <- list( objective="binary:logistic", 
+                      eval_metric="error", 
+                      nrounds=100L, 
+                      eta=0.1)
+
+#set parameter space
+params <- makeParamSet(makeDiscreteParam("booster",values = c("gbtree","gblinear")), 
+                       makeIntegerParam("max_depth",lower = 3L,upper = 10L), 
+                       makeNumericParam("min_child_weight",lower = 1L,upper = 10L), 
+                       makeNumericParam("subsample",lower = 0.5,upper = 1), 
+                       makeNumericParam("colsample_bytree",lower = 0.5,upper = 1))
+
+#set resampling strategy
+rdesc <- makeResampleDesc("CV",
+                           stratify = T,
+                           iters=10L)
+
+
+
+#search strategy
+ctrl <- makeTuneControlRandom(maxit = 10L)
+
+#set parallel backend
+library(parallel)
+library(parallelMap) 
+parallelStartSocket(cpus = detectCores())
+ 
+#parameter tuning
+mytune <- tuneParams(learner = lrn, 
+                     task = traintask, 
+                     resampling = rdesc, 
+                     measures = acc,
+                     par.set = params, 
+                     control = ctrl, 
+                     show.info = T)
+mytune$y
+
+
+#set hyperparameters
+lrn_tune <- setHyperPars(lrn,par.vals = mytune$x)
+
+#train model
+xgmodel <- train(learner = lrn_tune,task = traintask)
+
+#predict model
+xgpred <- predict(xgmodel,testtask)
+
+
+confusionMatrix(xgpred$data$response,xgpred$data$truth)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##~~~~~~~~~~~~ CV XGBOOST
+#
+#model_tuned_cv <- xgb.cv(data = dtrain, # the data           
+#                       max.depth = 5, # the maximum depth of each decision tree
+#                       nround = 200, # number of boosting rounds
+#                       early_stopping_rounds = 10, 
+#                       eval_metric = "auc",# if we dont see an improvement in this many rounds, stop
+#                       objective = "binary:logistic",
+#                       print_every_n = 5,
+#                       scale_pos_weight = negative_cases/positive_cases)
+##watchlist = list(train = dtrain)) # the objective function
+#
+#
+#params <- list(booster = "gbtree", objective = "binary:logistic", eta=0.3, max_depth=5)
+#
+#
+## control for imbalanced classes
+#cv <- xgb.cv(params = params, data = dtrain, nrounds = 200, nfold = 5, metrics = list("rmse","auc"), 
+#             showsd = T, stratified = T, print_every_n = 10, early_stopping_rounds = 20, maximize = F)
+#
+#
+##xgbcv <- xgb.cv( params = params, data = dtrain, nrounds = 100, nfold = 5, showsd = T, stratified = T, print.every.n = 10, early.stop.round = 20, maximize = F)
+#
+#
+#print(cv)
+#print(cv, verbose=TRUE)
+#
+## generate predictions for our held-out testing data
+#pred_cv <- predict(cv, dtest)
+#
+#pred_cv
+#
+#confusionMatrix(table(as.numeric(pred_cv > 0.5), test_labels))
+#
+##as.numeric(pred > 0.5)
+#
+##mean(as.numeric(pred > 0.5))
+#
+##test_labels
+#
+## get & print the classification error
+#err <- mean(as.numeric(pred_cv > 0.5) != test_labels)
+#print(paste("test-error=", err))
+#
+#
+#importance_matrix_cv <- xgb.importance(names(pd_mx), model = model_tuned_cv)
+#
+## and plot it!
+#xgb.plot.importance(importance_matrix_cv)
+#
+#~~~~~~~~~~~~~~~~~~~~~~End Fxn~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 
 #~~~~~~~~~~~~~~HYPERTUNING knn.cv, something funny about model, only got 84%, but sensitivity is jacked up, need to 
