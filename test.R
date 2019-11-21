@@ -144,20 +144,18 @@ fs_df
 dim(fs_df)
 
 
-
 names(fs_df)
 
 # Remove categorical cols, replaced with dummies, result removed as well, can uncomment
 
 f_df <- cbind(fs_df[,1],
-              #fs_df[,2],
               fs_df[,3],
               fs_df[,5:6],   
               fs_df[,10],    
               fs_df[,12],
               fs_df[,13:14], 
               fs_df[,16],    
-              fs_df[,19:20], 
+              fs_df[,18:20], 
               fs_df[,24:25],
               fs_df[,27:60],
               fs_df[,62:63]) 
@@ -174,6 +172,161 @@ names(f_df)[[6]] <-  "HourlyRate"
 names(f_df)[[9]] <- "JobSatisfaction"
 
 names(f_df)
+
+
+#~~~~~~~~~~~~~~~~Scaling features
+
+
+str(f_df)
+
+str(raw_df)
+
+fs_df %>% as.tibble()
+
+str(f_df)
+
+
+
+# divide by 1000
+
+maxMonthlyIncome <- max(f_df$MonthlyIncome)
+
+minMonthlyIncome <- min(f_df$MonthlyIncome)
+
+MonthlyIncome_rng <- maxMonthlyIncome - minMonthlyIncome
+
+maxMonthlyIncome
+
+minMonthlyIncome
+
+MonthlyIncome_rng
+
+
+# Divide by 100
+
+maxDailyRate <- max(f_df$DailyRate)
+
+minDailyRate <- min(f_df$DailyRate)
+
+DailyRate_rng <- maxDailyRate - minDailyRate
+
+maxDailyRate
+
+minDailyRate
+
+DailyRate_rng
+
+
+
+# divide by 1000
+
+
+maxMonthlyRate <- max(f_df$MonthlyRate)
+
+minMonthlyRate <- min(f_df$MonthlyRate)
+
+MonthlyRate_rng <- maxMonthlyRate - minMonthlyRate
+
+maxMonthlyRate
+
+minMonthlyRate
+
+MonthlyRate_rng
+
+
+
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#dat <- data.frame(x = rnorm(10, 30, .2), y = runif(10, 3, 5))
+#scaled.dat <- scale(dat)
+#
+## check that we get mean of 0 and sd of 1
+#colMeans(scaled.dat)  # faster version of apply(scaled.dat, 2, mean)
+#apply(scaled.dat, 2, sd)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#library(dplyr)
+
+#set.seed(1234)
+#dat <- data.frame(x = rnorm(10, 30, .2), 
+#                  y = runif(10, 3, 5),
+#                  z = runif(10, 10, 20))
+#dat
+
+
+# Plug names in here
+
+
+colm <- c("DailyRate","MonthlyRate", "MonthlyIncome")
+
+base_scaled_df <- f_df %>% mutate_at(vars(colm), list(~scale(.) %>% as.vector))
+
+base_scaled_df
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+#EDIT 1 (2016): Addressed Julian's comment: the output of scale is Nx1 matrix so ideally we should add an as.vector to convert the matrix type back into a vector type. Thanks Julian!
+
+#EDIT 2 (2019): Quoting Duccio A.'s comment: For the latest dplyr (version 0.8) you need to change dplyr::funcs with list, like dat %>% mutate_each_(list(~scale(.) %>% as.vector), vars=c("y","z"))
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Opt for function below
+
+#zVar <- (myVar - mean(myVar)) / sd(myVar)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+normFunc <- function(x){(x-mean(x, na.rm = T))/sd(x, na.rm = T)}
+
+#x<-rnorm(10,14,2)
+#y<-rnorm(10,7,3)
+#z<-rnorm(10,18,5)
+#df<-data.frame(x,y,z)
+
+normFun_df <- f_df %>% mutate_at(vars(colm), list(~normFunc(.) %>% as.vector))
+
+normFun_df
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#library(caret)
+# Assuming goal class is column 10
+preObj <- preProcess(f_df, method=c("center", "scale"))
+
+
+#newData <- predict(preObj, data[, -10])
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#df.scaled <- as.data.frame(scale(df))
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+data.Normalization (x,type="n0",normalization="column")
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #fs_df <- dummyVars(" ~ .", data = fs_df)
 
@@ -195,13 +348,13 @@ names(f_df)
 
 #~~~~~~~~~~~~~~~~~~~~~~~Remove Redundant Features
 
-correlationMatrix <- cor(f_df, use="pairwise.complete.obs")
+correlationMatrix <- cor(base_scaled_df, use="pairwise.complete.obs")
 
 #gg_miss_var(correlationMatrix)
 
 gg_miss_var(as.data.frame(correlationMatrix))
 
-highlyCorrelated <- findCorrelation(correlationMatrix, cutoff = 0.75)#, names = TRUE)
+highlyCorrelated <- findCorrelation(correlationMatrix, cutoff = 0.7)#, names = TRUE)
 
 #correlationMatrix[highlyCorrelated,]
 
@@ -240,7 +393,7 @@ set.seed(22)
 
 control <- rfeControl(functions=rfFuncs, method="cv", number=10)
 # run the RFE algorithm
-results <- rfe(f_df, raw_df[,3], sizes=c(1:50), rfeControl=control)
+results <- rfe(base_scaled_df, raw_df[,3], sizes=c(1:42), rfeControl=control)
 # summarize the results
 print(results)
 # list the chosen features
@@ -271,9 +424,13 @@ ggpairs(pd_df)
 #~~~~~~~~~~~~~~~~~Fxn~~~~~~~~~~~~~~
 
 pd_mx <- data.matrix(pd_df)
+#pd_mx <- data.matrix(f_df)
+#pd_mx <- data.matrix(base_scaled_df)
 
 
 t_splt <- sample(seq(1:(dim(pd_df)[[1]])), (round(dim(pd_df)[[1]] * .7)))
+#t_splt <- sample(seq(1:(dim(f_df)[[1]])), (round(dim(f_df)[[1]] * .7)))
+#t_splt <- sample(seq(1:(dim(base_scaled_df)[[1]])), (round(dim(base_scaled_df)[[1]] * .7)))
 
 #t_splt
 
@@ -297,13 +454,22 @@ dtrain <- xgb.DMatrix(data = train_data, label = train_labels)
 
 dtest <- xgb.DMatrix(data = test_data, label = test_labels)
 
-model_tuned <- xgboost(data = dtrain, # the data           
-                       max.depth = 5, # the maximum depth of each decision tree
+#model_tuned <- xgboost(data = dtrain, # the data           
+#                       max.depth = 5, # the maximum depth of each decision tree
+#                       nround = 200, # number of boosting rounds
+#                       early_stopping_rounds = 10, 
+#                       eval_metric = "auc",# if we dont see an improvement in this many rounds, stop
+#                       objective = "binary:logistic") # the objective function
+#                       #scale_pos_weight = negative_cases/postive_cases) # control for imbalanced classes
+
+model_tuned <- xgb.train(data = dtrain, # the data           
+                       max.depth = 10, # the maximum depth of each decision tree
                        nround = 200, # number of boosting rounds
                        early_stopping_rounds = 10, 
                        eval_metric = "auc",# if we dont see an improvement in this many rounds, stop
-                       objective = "binary:logistic") # the objective function
-                       #scale_pos_weight = negative_cases/postive_cases) # control for imbalanced classes
+                       objective = "binary:logistic")#,
+                       #watchlist = list(train = dtrain)) # the objective function
+#scale_pos_weight = negative_cases/postive_cases) # control for imbalanced classes
 
 # generate predictions for our held-out testing data
 pred <- predict(model_tuned, dtest)
@@ -312,11 +478,11 @@ pred
 
 confusionMatrix(table(as.numeric(pred > 0.5), test_labels))
 
-as.numeric(pred > 0.5)
+#as.numeric(pred > 0.5)
 
-mean(as.numeric(pred > 0.5))
+#mean(as.numeric(pred > 0.5))
 
-test_labels
+#test_labels
 
 # get & print the classification error
 err <- mean(as.numeric(pred > 0.5) != test_labels)
