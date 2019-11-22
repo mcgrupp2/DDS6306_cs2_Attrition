@@ -38,15 +38,8 @@ str(raw_df)
 
 raw_df %>% ggplot(aes(x = MonthlyIncome, y = ..count..)) + geom_histogram(bins = 50)
 
-maxMonthlyIncome <- max(raw_df$MonthlyIncome)
 
-minMonthlyIncome <- min(raw_df$MonthlyIncome)
 
-rng <- maxMonthlyIncome - minMonthlyIncome
-
-rng
-
-#raw_df$WorkLifeBalance
 
 #Compare worklifebalance to monthly income
 
@@ -64,15 +57,6 @@ raw_df %>% ggplot(aes(x=WorkLifeBalance, y=JobSatisfaction)) + geom_jitter()
 p_ <- GGally::print_if_interactive
 
 
-## Quick example, with and without colour
-data(flea)
-ggpairs(flea, columns = 2:4)
-pm <- ggpairs(flea, columns = 2:4, ggplot2::aes(colour=species))
-p_(pm)
-
-
-glly_df <- raw_df[,c(2, 5, 7, 13, 15, 16, 17, 19, 20, 21, 22, 23, 27, 28, 30)]
-ggpairs(glly_df)
 
 
 
@@ -220,7 +204,6 @@ minDailyRate
 DailyRate_rng
 
 
-
 # divide by 1000
 
 
@@ -250,35 +233,6 @@ minPercentSalaryHike
 PercentSalaryHike_rng
 
 
-
-
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#dat <- data.frame(x = rnorm(10, 30, .2), y = runif(10, 3, 5))
-#scaled.dat <- scale(dat)
-#
-## check that we get mean of 0 and sd of 1
-#colMeans(scaled.dat)  # faster version of apply(scaled.dat, 2, mean)
-#apply(scaled.dat, 2, sd)
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#library(dplyr)
-
-#set.seed(1234)
-#dat <- data.frame(x = rnorm(10, 30, .2), 
-#                  y = runif(10, 3, 5),
-#                  z = runif(10, 10, 20))
-#dat
-
-
-# Plug names in here
-
-
 #colr <- c("DailyRate","MonthlyRate", "MonthlyIncome", "HourlyRate")
 
 cola <- c("DailyRate", "DistanceFromHome", "HourlyRate", "MonthlyIncome", "MonthlyRate",      
@@ -292,85 +246,6 @@ cola <- c("DailyRate", "DistanceFromHome", "HourlyRate", "MonthlyIncome", "Month
 all_scaled_df <- f_df %>% mutate_at(vars(cola), list(~scale(.) %>% as.vector))
 
 all_scaled_df
-
-
-#Scale additional features
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-#EDIT 1 (2016): Addressed Julian's comment: the output of scale is Nx1 matrix so ideally we should add an as.vector to convert the matrix type back into a vector type. Thanks Julian!
-
-#EDIT 2 (2019): Quoting Duccio A.'s comment: For the latest dplyr (version 0.8) you need to change dplyr::funcs with list, like dat %>% mutate_each_(list(~scale(.) %>% as.vector), vars=c("y","z"))
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Opt for function below
-
-#zVar <- (myVar - mean(myVar)) / sd(myVar)
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-normFunc <- function(x){(x-mean(x, na.rm = T))/sd(x, na.rm = T)}
-
-#x<-rnorm(10,14,2)
-#y<-rnorm(10,7,3)
-#z<-rnorm(10,18,5)
-#df<-data.frame(x,y,z)
-
-normFun_df <- f_df %>% mutate_at(vars(colm), list(~normFunc(.) %>% as.vector))
-
-normFun_df
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#library(caret)
-# Assuming goal class is column 10
-preObj <- preProcess(f_df, method=c("center", "scale"))
-
-
-#newData <- predict(preObj, data[, -10])
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#df.scaled <- as.data.frame(scale(df))
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-data.Normalization (x,type="n0",normalization="column")
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-#fs_df <- dummyVars(" ~ .", data = fs_df)
-
-#fs_df
-
-#f_df <- data.frame(predict(fs_df, newdata = fs_df))
-
-#str(f_df)
-
-#gg_miss_var(f_df)
-
-
-#nums <- sapply(f_df, is.numeric)
-#data.numeric <- f_df[ , nums]
-
-#data.without_na <- na.omit(data.numeric)
-#cor_matrix <- cor(data.without_na)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~Remove Redundant Features
@@ -466,47 +341,14 @@ train_data <- pd_mx[t_splt,]
 train_labels <- sapply(raw_df[t_splt, 3], function(x) ifelse(x == "Yes", 1, 0))
 
 
-#label <- as.numeric(dtrain[[33]])
-
-#data <- as.matrix(dtrain[2:31])
-
-#weight <- as.numeric(dtrain[[32]]) * testsize / length(label)
-
-#sumwpos <- sum(weight * (label==1.0))
-
-#sumwneg <- sum(weight * (label==0.0))
-
-
-
-#sum(test_labels == 1)/length(test_labels)
-
-
-
 test_data <- pd_mx[-(t_splt),]
 
 test_labels <- sapply(raw_df[-(t_splt), 3], function(x) ifelse(x == "Yes", 1, 0))
 
-test_labels
-
-
 
 dtrain <- xgb.DMatrix(data = train_data, label = train_labels)
 
-
 dtest <- xgb.DMatrix(data = test_data, label = test_labels)
-
-#model_tuned <- xgboost(data = dtrain, # the data           
-#                       max.depth = 5, # the maximum depth of each decision tree
-#                       nround = 200, # number of boosting rounds
-#                       early_stopping_rounds = 10, 
-#                       eval_metric = "auc",# if we dont see an improvement in this many rounds, stop
-#                       objective = "binary:logistic") # the objective function
-#                       #scale_pos_weight = negative_cases/postive_cases) # control for imbalanced classes
-
-
-negative_cases <- pd_mx %>% filter()
-
-
 
 
 positive_cases <- (sum(train_labels == 1) + sum(test_labels == 1))
@@ -516,21 +358,9 @@ negative_cases <- (sum(train_labels == 0) + sum(test_labels == 0))
 print(paste("weight statistics: wpos=", positive_cases, "wneg=", negative_cases, "ratio=", negative_cases / positive_cases))
 
 
-#/(length(train_labels) + length(test_labels))
-
-
-
-
-
-
-
-
-
-
-
 #~~~~~~~~~~~~ Normal XGBOOST
 
-model_tuned <- xgboost(data = dtrain, # the data           
+model_tuned <- xgboost(data = dtrain,            
                        max.depth = 5, # the maximum depth of each decision tree
                        nround = 200, # number of boosting rounds
                        early_stopping_rounds = 10, 
@@ -619,29 +449,50 @@ cbind(train_data, train_labels)
 
 names(hp_train_data)
 
-names(hp_train_data)[[6]] <- c("JobRoleSalesRepresentative")
+names_to_fix <- c("JobRoleSalesRepresentative", 
+                  "JobRole_ResearchDirector", 
+                  "JobRole_ManufacturingDirector", 
+                  "JobRoleSalesRepresentative", 
+                  "EducationField_HumanResources", 
+                  "train_labels")
 
-names(hp_train_data)[[15]] <- c("JobRole_ResearchDirector")
+cols_to_fix <- c(6, 15, 17, 20, 22, 24)
 
-names(hp_train_data)[[17]] <- c("JobRole_ManufacturingDirector")
+j <- 0
 
-names(hp_train_data)[[20]] <- c("JobRole_SalesExecutive")
+for (i in length(cols_to_fix)) {
+  
+  names(hp_train_data)[[i]] <- c(names_to_fix[[j]]) 
+  names(hp_test_data)[[i]] <- c(names_to_fix[[j]])
+  
+    j <- j + 1
+  
+}
 
-names(hp_train_data)[[22]] <- c("EducationField_HumanResources")
 
-names(hp_train_data)[[24]] <- c("train_labels")
-
-names(hp_test_data)[[6]] <- c("JobRoleSalesRepresentative")
-
-names(hp_test_data)[[15]] <- c("JobRole_ResearchDirector")
-
-names(hp_test_data)[[17]] <- c("JobRole_ManufacturingDirector")
-
-names(hp_test_data)[[20]] <- c("JobRole_SalesExecutive")
-
-names(hp_test_data)[[22]] <- c("EducationField_HumanResources")
-
-names(hp_test_data)[[24]] <- c("test_labels")
+#names(hp_train_data)[[6]] <- c("JobRoleSalesRepresentative")
+#
+#names(hp_train_data)[[15]] <- c("JobRole_ResearchDirector")
+#
+#names(hp_train_data)[[17]] <- c("JobRole_ManufacturingDirector")
+#
+#names(hp_train_data)[[20]] <- c("JobRole_SalesExecutive")
+#
+#names(hp_train_data)[[22]] <- c("EducationField_HumanResources")
+#
+#names(hp_train_data)[[24]] <- c("train_labels")
+#
+#names(hp_test_data)[[6]] <- c("JobRoleSalesRepresentative")
+#
+#names(hp_test_data)[[15]] <- c("JobRole_ResearchDirector")
+#
+#names(hp_test_data)[[17]] <- c("JobRole_ManufacturingDirector")
+#
+#names(hp_test_data)[[20]] <- c("JobRole_SalesExecutive")
+#
+#names(hp_test_data)[[22]] <- c("EducationField_HumanResources")
+#
+#names(hp_test_data)[[24]] <- c("test_labels")
 
 dim(hp_train_data)
 
@@ -694,7 +545,6 @@ mytune <- tuneParams(learner = lrn,
                      show.info = T)
 mytune$y
 
-
 #set hyperparameters
 lrn_tune <- setHyperPars(lrn,par.vals = mytune$x)
 
@@ -704,34 +554,7 @@ xgmodel <- train(learner = lrn_tune,task = traintask)
 #predict model
 xgpred <- predict(xgmodel,testtask)
 
-
 confusionMatrix(xgpred$data$response,xgpred$data$truth)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ##~~~~~~~~~~~~ CV XGBOOST
 #
@@ -784,76 +607,6 @@ confusionMatrix(xgpred$data$response,xgpred$data$truth)
 #xgb.plot.importance(importance_matrix_cv)
 #
 #~~~~~~~~~~~~~~~~~~~~~~End Fxn~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-#~~~~~~~~~~~~~~HYPERTUNING knn.cv, something funny about model, only got 84%, but sensitivity is jacked up, need to 
-#~~~~~~~~~~~~Pull tuning loop out to cycle xgboost
-
-
-set.seed(22)
-iterations = 500
-numks = 60
-splitPerc = .7
-masterAcc = matrix(nrow = iterations, ncol = numks)
-for(j in 1:iterations)
-{
-  trainIndices = sample(1:dim(pd_df)[1],round(splitPerc * dim(pd_df)[1]))
-  train = pd_df[trainIndices,]
-  test = pd_df[-trainIndices,]
-  #dim(train)
-  #dim(test)
-  #length(cl)
-  cl = raw_df[trainIndices, 3]
-  for(i in 1:numks)
-  {
-    classifications = knn.cv(train, 
-                             #test, 
-                             cl, 
-                             prob = TRUE, k = i)
-    table(classifications,cl)
-    CM = confusionMatrix(table(classifications, cl))
-    masterAcc[j,i] = CM$overall[1]
-  }
-  
-}
-MeanAcc = colMeans(masterAcc)
-plot(seq(1,numks,1),MeanAcc, type = "l")
-which.max(MeanAcc)
-max(MeanAcc)
-
-
-raw_df
-
-#proto_df <- cbind(raw)
-
-# apply k prototyps
-
-kpres <- kproto(fs_df, 5)
-
-summary(kpres)
-
-protoPrdct <- predict(kpres, fs_df)
-
-protoPrdct
-
-# Check for the optimal number of clusters given the data
-
-mydata <- fs_df
-wss<-vector()
-for (i in 2:15){ wss[i] <- sum(kproto(fs_df, i)$withinss)}
-par(mfrow=c(1,1))
-plot(1:15, wss, type="b", xlab="Number of Clusters",
-     ylab="Within groups sum of squares",
-     main="Assessing the Optimal Number of Clusters with the Elbow Method",
-     pch=20, cex=2)
-
-## plots between Total and other numerical Attributes with clusters: 
-#par(mfrow=c(1,2))
-#
-#for(i in 1: 1:6){
-#  plot(pokemon[,c(5,5+i)], col=pokemon$cluster, main="K-prototypes")
-#}
 
 
 
