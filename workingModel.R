@@ -104,8 +104,8 @@ labels_colors(dend) <-
 
 # We shall add the flower type to the labels:
 labels(dend) <- raw_df$ID #paste(as.character(iris[,5])[order.dendrogram(dend)],
-                      #"(",labels(dend),")", 
-                      #sep = "")
+#"(",labels(dend),")", 
+#sep = "")
 # We hang the dendrogram a bit:
 dend <- hang.dendrogram(dend,hang_height=0.1)
 # reduce the size of the labels:
@@ -538,8 +538,8 @@ model_tuned <- xgboost(data = dtrain, # the data
                        objective = "binary:logistic",
                        print_every_n = 5,
                        scale_pos_weight = negative_cases/positive_cases)
-                       #watchlist = list(train = dtrain)) # the objective function
- # control for imbalanced classes
+#watchlist = list(train = dtrain)) # the objective function
+# control for imbalanced classes
 
 # generate predictions for our held-out testing data
 pred <- predict(model_tuned, dtest)
@@ -671,8 +671,8 @@ params <- makeParamSet(makeDiscreteParam("booster",values = c("gbtree","gblinear
 
 #set resampling strategy
 rdesc <- makeResampleDesc("CV",
-                           stratify = T,
-                           iters=10L)
+                          stratify = T,
+                          iters=10L)
 
 
 
@@ -683,7 +683,7 @@ ctrl <- makeTuneControlRandom(maxit = 10L)
 library(parallel)
 library(parallelMap) 
 parallelStartSocket(cpus = detectCores())
- 
+
 #parameter tuning
 mytune <- tuneParams(learner = lrn, 
                      task = traintask, 
