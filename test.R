@@ -1,6 +1,12 @@
 #these could be edits
 
 
+# https://devblogs.microsoft.com/premier-developer/exploring-feature-weights-using-r-and-azure-machine-learning-studio/
+# https://rpubs.com/bpr1989/HRAnalysis
+# https://rstudio-pubs-static.s3.amazonaws.com/397345_30101161deeb4def9bf3570e8899d859.html
+# https://www.kaggle.com/vsdwivedi/a-detailed-study-on-employee-attrition
+# https://rpubs.com/Himeshme/Attrition
+
 #install.packages("tidyverse")
 #install.packages("naniar")
 #install.packages("caret")
@@ -23,12 +29,29 @@ library(xgboost)
 library(clustMixType)
 library(class)
 library(mlr)
+library(datasets)
+
+
 
 
 #Read the raw csv with attrition and salaries
 
 raw_df <- read.csv("attritApp/data/CaseStudy2-data.csv")
-raw_df 
+#raw_df
+
+attr_df <- raw_df %>% filter(Attrition == "Yes")
+
+
+nttr_df <- raw_df %>% filter(Attrition == "No")
+
+
+nttr_df %>% group_by(Department)
+
+#summary(raw_df)
+
+#summary(attr_df)
+
+#summary(nttr_df)
 
 #No missing vals
 gg_miss_var(raw_df)
@@ -38,22 +61,296 @@ str(raw_df)
 
 raw_df %>% ggplot(aes(x = MonthlyIncome, y = ..count..)) + geom_histogram(bins = 50)
 
-maxMonthlyIncome <- max(raw_df$MonthlyIncome)
+# divide by 1000
 
-minMonthlyIncome <- min(raw_df$MonthlyIncome)
+maxMonthlyIncome <- max(f_df$MonthlyIncome)
 
-rng <- maxMonthlyIncome - minMonthlyIncome
+minMonthlyIncome <- min(f_df$MonthlyIncome)
 
-rng
+MonthlyIncome_rng <- maxMonthlyIncome - minMonthlyIncome
+
+maxMonthlyIncome
+
+minMonthlyIncome
+
+MonthlyIncome_rng
+
+
+# Divide by 100
+
+maxDailyRate <- max(f_df$DailyRate)
+
+minDailyRate <- min(f_df$DailyRate)
+
+DailyRate_rng <- maxDailyRate - minDailyRate
+
+maxDailyRate
+
+minDailyRate
+
+DailyRate_rng
+
+
+
+# divide by 1000
+
+
+maxMonthlyRate <- max(f_df$MonthlyRate)
+
+minMonthlyRate <- min(f_df$MonthlyRate)
+
+MonthlyRate_rng <- maxMonthlyRate - minMonthlyRate
+
+maxMonthlyRate
+
+minMonthlyRate
+
+MonthlyRate_rng
+
+
+maxPercentSalaryHike <- max(raw_df$PercentSalaryHike)
+
+minPercentSalaryHike <- min(raw_df$PercentSalaryHike)
+
+PercentSalaryHike_rng <- maxPercentSalaryHike - minPercentSalaryHike
+
+maxPercentSalaryHike
+
+minPercentSalaryHike
+
+PercentSalaryHike_rng
 
 #raw_df$WorkLifeBalance
 
 #Compare worklifebalance to monthly income
 
+raw_df
+
+names(raw_df)
+
+
+all_col_names <- c("ID", "Age", "Attrition", "BusinessTravel", "DailyRate", "Department", 
+                   "DistanceFromHome", "Education", "EducationField", "EmployeeCount", 
+                   "EmployeeNumber", "EnvironmentSatisfaction", "Gender", "HourlyRate", 
+                   "JobInvolvement" , "JobLevel", "JobRole", "JobSatisfaction", "MaritalStatus",
+                   "MonthlyIncome", "MonthlyRate", "NumCompaniesWorked", "Over18", "PercentSalaryHike", 
+                   "PerformanceRating", "RelationshipSatisfaction", "StandardHours", "StockOptionLevel", 
+                   "TotalWorkingYears", "TrainingTimesLastYear", "WorkLifeBalance", "YearsAtCompany", 
+                   "YearsInCurrentRole", "YearsSinceLastPromotion", "YearsWithCurrManager")    
+
+
+colnm_len <- 1:length(all_col_names)
+
+
+col_nm_df <- as.data.frame(x = all_col_names)
+
+
+cont_var_inx <- c(2, 3, 5, 6, 7, 13, 14, 20, 21, 22, 24, 25, 27, 29, 30, 32, 34, 35)
+
+ord_var_inx <- c(3, 4, 6, 8, 9, 12, 13, 15, 16, 18, 19, 25, 26, 28, 30, 31)
+
+
 raw_df %>% ggplot(aes(x=WorkLifeBalance, y=MonthlyIncome)) + geom_jitter()
 
-
 raw_df %>% ggplot(aes(x=WorkLifeBalance, y=JobSatisfaction)) + geom_jitter()
+
+raw_df %>% ggplot(aes(x=EnvironmentSatisfaction, y=JobSatisfaction)) + geom_jitter()
+
+raw_df %>% ggplot(aes(x=JobSatisfaction, y=JobLevel)) + geom_jitter()
+
+raw_df[,ord_var_inx]
+
+
+raw_df %>% ggplot(aes(x=reorder(JobLevel, MonthlyIncome), y=MonthlyIncome)) + 
+                  geom_boxplot(aes(fill=Attrition)) 
+
+
+raw_df %>% ggplot(aes(x=reorder(JobRole, MonthlyIncome), y=MonthlyIncome)) + 
+                  geom_boxplot(aes(fill=Attrition)) 
+
+
+raw_df %>% ggplot(aes(x=YearsAtCompany, y=YearsInCurrentRole)) + geom_point()
+
+raw_df %>% ggplot(aes(x=JobRole, y=TrainingTimesLastYear, color = as.factor(JobLevel))) + 
+                  geom_jitter()
+
+
+roleMeans <- aggregate(raw_df[, "JobLevel"], list(raw_df$JobRole), mean) %>% arrange(x)
+
+roleMeans
+
+typeof(roleMeans[[1]])
+
+dept_list <- as.character(unique(raw_df$Department))
+
+
+ord <- as.character(roleMeans[[1]])
+#c("Sales Representative",
+#       "Research Scientist",
+#          "Human Resources",
+#    "Laboratory Technician",
+#          "Sales Executive",
+#   "Manufacturing Director",
+#"Healthcare Representative",
+#        "Research Director",
+#                  "Manager")
+
+
+raw_df %>% ggplot(aes(x=JobRole, y=JobLevel, color = Department)) + 
+                  geom_jitter() + scale_x_discrete(limits = ord) +
+                  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+
+raw_df %>% ggplot(aes(x=JobRole, y=JobLevel, color = Attrition)) + 
+                  geom_jitter() + scale_x_discrete(limits = ord) +
+                  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+
+attr_df %>% ggplot(aes(x=JobRole, y=JobLevel, color = Department)) + 
+                  geom_jitter() + scale_x_discrete(limits = ord) +
+                  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+
+nttr_df %>% ggplot(aes(x=JobRole, y=JobLevel, color = Department)) + 
+                  geom_jitter() + scale_x_discrete(limits = ord) +
+                  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+
+df_count  <-  raw_df %>% count(JobRole, JobLevel) %>% mutate(prop = round((df_count$n/sum(df_count$n))*100, 2))
+
+
+attr_count  <-  attr_df %>% count(JobRole, JobLevel, Department) 
+
+attr_count  <- attr_count %>% mutate(prop = round((attr_count$n/sum(attr_count$n))*100, 2))
+
+
+nttr_count  <-  nttr_df %>% count(JobRole, JobLevel, Department) %>% mutate(prop = round((nttr_count$n/sum(nttr_count$n))*100, 2))
+
+nttr_count <- nttr_count %>% mutate(prop = round((nttr_count$n/sum(nttr_count$n))*100, 2))
+
+
+raw_df %>% ggplot(aes(x=JobRole, y=JobLevel, color = Department)) +
+                  geom_count() + scale_x_discrete(limits = ord) +
+                  geom_text(data = df_count, 
+                            aes(df_count$JobRole, 
+                                df_count$JobLevel, 
+                                label = df_count$n), 
+                            size = 3,
+                            nudge_y = 0.1,
+                            color = 'red') +
+                  geom_text(data = df_count, 
+                            aes(df_count$JobRole, 
+                                df_count$JobLevel, 
+                                label = paste(df_count$prop, "%")), 
+                            size = 3,
+                            nudge_y = -0.1,
+                            color = 'blue') +
+                  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+
+attr_df %>% ggplot(aes(x=JobRole, y=JobLevel)) +
+                  geom_count(na.rm = TRUE) + scale_x_discrete(limits = ord) +
+                  geom_text(data = attr_count, 
+                            aes(attr_count$JobRole, 
+                                attr_count$JobLevel, 
+                                label = attr_count$n), 
+                            size = 3,
+                            nudge_y = 0.1,
+                            color = 'red') +
+                  geom_text(data = attr_count, 
+                            aes(attr_count$JobRole, 
+                                attr_count$JobLevel, 
+                                label = paste(attr_count$prop, "%")), 
+                            size = 3,
+                            nudge_y = -0.1,
+                            color = 'blue') +
+                  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+nttr_df %>% ggplot(aes(x=JobRole, y=JobLevel)) +
+                  geom_count(na.rm = TRUE) + scale_x_discrete(limits = ord) +
+                  geom_text(data = nttr_count, 
+                            aes(nttr_count$JobRole, 
+                                nttr_count$JobLevel, 
+                                label = nttr_count$n), 
+                            size = 3,
+                            nudge_y = 0.1,
+                            color = 'red') +
+                  geom_text(data = nttr_count, 
+                            aes(nttr_count$JobRole, 
+                                nttr_count$JobLevel, 
+                                label = paste(nttr_count$prop, "%")), 
+                            size = 3,
+                            nudge_y = -0.1,
+                            color = 'blue') +
+                  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+which(nttr_count$n == max(nttr_count$n))
+
+
+
+#raw_df %>% ggplot(aes(x=JobRole, y=JobLevel)) + 
+#                  geom_contour(aes(z = raw_df$MonthlyIncome)) + scale_x_discrete(limits = ord)
+
+
+
+
+
+
+
+attr_df %>% group_by(Department) %>% summarise(JobRol = n())
+
+aggregate(attr_df$JobLevel, by=list(Role = attr_df$JobRole), FUN = sum)
+
+
+
+sum(attr_count %>% arrange(desc(n)) %>% head(n=10) %>% select(n))
+
+attr_rs1 <- attr_df %>% filter(JobRole == "Research Scientist" & JobLevel == 1)
+
+mean(attr_rs1$YearsAtCompany)
+
+mean(attr_rs1$YearsInCurrentRole)
+
+mean(attr_rs1$YearsSinceLastPromotion)
+
+mean(attr_rs1$TotalWorkingYears)
+
+nttr_rs1 <- nttr_df %>% filter(JobRole == "Research Scientist" & JobLevel == 1)
+
+mean(nttr_rs1$YearsAtCompany)
+
+mean(nttr_rs1$YearsInCurrentRole)
+
+mean(nttr_rs1$YearsSinceLastPromotion)
+
+mean(nttr_rs1$TotalWorkingYears)
+
+
+dim(attr_rs1)
+
+dim(nttr_rs1)
+
+attr_rs1_ot <- attr_rs1 %>% filter(OverTime == "Yes")
+
+nttr_rs1_ot <- nttr_rs1 %>% filter(OverTime == "Yes")
+
+str(attr_rs1_ot)
+
+summary(attr_rs1_ot)
+
+summary(nttr_rs1_ot)
+
+dim(nttr_rs1 %>% filter(OverTime == "Yes"))
+
+summary(attr_df)
+
+summary(nttr_df)
+
+#dfBreweryByState <- Brewery %>%
+#  group_by(State) %>%
+#  summarize(BreweryCount = n()) %>% rename(state = State)
+#head(dfBreweryByState %>% arrange(desc(dfBreweryByState$BreweryCount)), n=3)
+
 
 
 #Maybe do some k-means to find clusters?
@@ -190,64 +487,7 @@ str(f_df)
 
 
 
-# divide by 1000
 
-maxMonthlyIncome <- max(f_df$MonthlyIncome)
-
-minMonthlyIncome <- min(f_df$MonthlyIncome)
-
-MonthlyIncome_rng <- maxMonthlyIncome - minMonthlyIncome
-
-maxMonthlyIncome
-
-minMonthlyIncome
-
-MonthlyIncome_rng
-
-
-# Divide by 100
-
-maxDailyRate <- max(f_df$DailyRate)
-
-minDailyRate <- min(f_df$DailyRate)
-
-DailyRate_rng <- maxDailyRate - minDailyRate
-
-maxDailyRate
-
-minDailyRate
-
-DailyRate_rng
-
-
-
-# divide by 1000
-
-
-maxMonthlyRate <- max(f_df$MonthlyRate)
-
-minMonthlyRate <- min(f_df$MonthlyRate)
-
-MonthlyRate_rng <- maxMonthlyRate - minMonthlyRate
-
-maxMonthlyRate
-
-minMonthlyRate
-
-MonthlyRate_rng
-
-
-maxPercentSalaryHike <- max(raw_df$PercentSalaryHike)
-
-minPercentSalaryHike <- min(raw_df$PercentSalaryHike)
-
-PercentSalaryHike_rng <- maxPercentSalaryHike - minPercentSalaryHike
-
-maxPercentSalaryHike
-
-minPercentSalaryHike
-
-PercentSalaryHike_rng
 
 
 
@@ -856,4 +1096,29 @@ plot(1:15, wss, type="b", xlab="Number of Clusters",
 #}
 
 
+library(xgboost)
+library(plyr)
+library(DMwR)
 
+fitControl <- trainControl(method="cv", number = 3,classProbs = TRUE )
+xgbGrid <- expand.grid(nrounds = 500,
+                       max_depth = 20,
+                       eta = .03,
+                       gamma = 0.01,
+                       colsample_bytree = .7,
+                       min_child_weight = 1,
+                       subsample = 0.9
+)
+
+
+HRAXGBmodel <- train(Attrition~., data = trainHRA,
+                   method = "xgbTree"
+                   ,trControl = fitControl
+                   , verbose=0
+                   , maximize=FALSE
+                   ,tuneGrid = xgbGrid
+)
+
+HRAXGBprd <- predict(HRAXGBmodel,testHRA)
+confusionMatrix(HRAXGBprd, testHRA$Attrition)
+XGB.plot <- plot.roc (as.numeric(testHRA$Attrition), as.numeric(HRAXGBprd),lwd=2, type="b", print.auc=TRUE,col ="blue")
