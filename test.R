@@ -16,6 +16,8 @@
 #install.packages("xgboost")
 #install.packages("clustMixType")
 #install.packages("mlr")
+#install.packages("gridExtra")
+install.packages("corrplot")
 
 library(plyr)
 library(tidyverse)
@@ -29,7 +31,9 @@ library(xgboost)
 library(clustMixType)
 library(class)
 library(mlr)
-library(datasets)
+library(gridExtra)
+library(forcats)
+library(corrplot)
 
 
 
@@ -196,9 +200,20 @@ ord <- as.character(roleMeans[[1]])
 #                  "Manager")
 
 
+
+ord2 <- c("Sales Representative",
+          "Sales Executive",
+       "Research Scientist",
+    "Laboratory Technician",
+"Healthcare Representative",
+   "Manufacturing Director",
+        "Research Director",
+          "Human Resources",
+                  "Manager")
+
 raw_df %>% ggplot(aes(x=JobRole, y=JobLevel, color = Department)) + 
-                  geom_jitter() + scale_x_discrete(limits = ord) +
-                  theme(axis.text.x = element_text(angle=45, hjust = 1))
+                  geom_jitter() + scale_x_discrete(limits = ord2) +
+                  theme(axis.text.x = element_text(angle=45, hjust = 1, size = 7))
 
 
 raw_df %>% ggplot(aes(x=JobRole, y=JobLevel, color = Attrition)) + 
@@ -223,66 +238,113 @@ attr_count  <-  attr_df %>% count(JobRole, JobLevel, Department)
 
 attr_count  <- attr_count %>% mutate(prop = round((attr_count$n/sum(attr_count$n))*100, 2))
 
+attr_count_labels <- attr_count
+
+attr_count_labels[9,] <- c("Manager", 5, "Research & Development", 3, 2.14)
+
+attr_count_labels[10,] <- c("Manager", 5, "Sales", 3, 2.14)
+
 
 nttr_count  <-  nttr_df %>% count(JobRole, JobLevel, Department) %>% mutate(prop = round((nttr_count$n/sum(nttr_count$n))*100, 2))
 
 nttr_count <- nttr_count %>% mutate(prop = round((nttr_count$n/sum(nttr_count$n))*100, 2))
 
 
-raw_df %>% ggplot(aes(x=JobRole, y=JobLevel, color = Department)) +
-                  geom_count() + scale_x_discrete(limits = ord) +
-                  geom_text(data = df_count, 
-                            aes(df_count$JobRole, 
-                                df_count$JobLevel, 
-                                label = df_count$n), 
-                            size = 3,
-                            nudge_y = 0.1,
-                            color = 'red') +
-                  geom_text(data = df_count, 
-                            aes(df_count$JobRole, 
-                                df_count$JobLevel, 
-                                label = paste(df_count$prop, "%")), 
-                            size = 3,
-                            nudge_y = -0.1,
-                            color = 'blue') +
-                  theme(axis.text.x = element_text(angle=45, hjust = 1))
+raw_df %>% 
+  ggplot(aes(x=JobRole, y=JobLevel, color = Department)) +
+  geom_count() + scale_x_discrete(limits = ord) +
+  geom_text(data = df_count, 
+    aes(df_count$JobRole, 
+        df_count$JobLevel, 
+        label = df_count$n), 
+    size = 3,
+    nudge_y = 0.1,
+    color = 'red') +
+  geom_text(data = df_count, 
+    aes(df_count$JobRole, 
+        df_count$JobLevel, 
+        label = paste(df_count$prop, "%")), 
+    size = 3,
+    nudge_y = -0.1,
+    color = 'blue') +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))
 
 
-attr_df %>% ggplot(aes(x=JobRole, y=JobLevel)) +
-                  geom_count(na.rm = TRUE) + scale_x_discrete(limits = ord) +
-                  geom_text(data = attr_count, 
-                            aes(attr_count$JobRole, 
-                                attr_count$JobLevel, 
-                                label = attr_count$n), 
-                            size = 3,
-                            nudge_y = 0.1,
-                            color = 'red') +
-                  geom_text(data = attr_count, 
-                            aes(attr_count$JobRole, 
-                                attr_count$JobLevel, 
-                                label = paste(attr_count$prop, "%")), 
-                            size = 3,
-                            nudge_y = -0.1,
-                            color = 'blue') +
-                  theme(axis.text.x = element_text(angle=45, hjust = 1))
+attr_df %>% 
+  ggplot(aes(x=JobRole, y=JobLevel)) +
+  geom_count(na.rm = TRUE) + scale_x_discrete(limits = ord) +
+  geom_text(data = attr_count, 
+     aes(attr_count$JobRole, 
+       attr_count$JobLevel, 
+       label = attr_count_labels$n), 
+     size = 3,
+     nudge_y = 0.1,
+     color = 'red') +
+  geom_text(data = attr_count, 
+     aes(attr_count$JobRole, 
+       attr_count$JobLevel, 
+       label = paste(attr_count_labels$prop, "%")), 
+     size = 3,
+     nudge_y = -0.1,
+     color = 'blue') +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))
 
-nttr_df %>% ggplot(aes(x=JobRole, y=JobLevel)) +
-                  geom_count(na.rm = TRUE) + scale_x_discrete(limits = ord) +
-                  geom_text(data = nttr_count, 
-                            aes(nttr_count$JobRole, 
-                                nttr_count$JobLevel, 
-                                label = nttr_count$n), 
-                            size = 3,
-                            nudge_y = 0.1,
-                            color = 'red') +
-                  geom_text(data = nttr_count, 
-                            aes(nttr_count$JobRole, 
-                                nttr_count$JobLevel, 
-                                label = paste(nttr_count$prop, "%")), 
-                            size = 3,
-                            nudge_y = -0.1,
-                            color = 'blue') +
-                  theme(axis.text.x = element_text(angle=45, hjust = 1))
+nttr_df %>% 
+  ggplot(aes(x=JobRole, y=JobLevel)) +
+  geom_count(na.rm = TRUE) + scale_x_discrete(limits = ord) +
+  geom_text(data = nttr_count, 
+    aes(nttr_count$JobRole, 
+        nttr_count$JobLevel, 
+       label = nttr_count$n), 
+    size = 3,
+    nudge_y = 0.1,
+    color = 'red') +
+  geom_text(data = nttr_count, 
+    aes(nttr_count$JobRole, 
+        nttr_count$JobLevel, 
+        label = paste(nttr_count$prop, "%")), 
+    size = 3,
+    nudge_y = -0.1,
+    color = 'blue') +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+
+attr_jl1_tot <- attr_df %>% filter(JobLevel == 1) %>% count()
+
+attr_jl1_ot <-attr_df %>% filter(JobLevel == 1 & OverTime == "Yes") %>% count()
+
+attr_ot_prop <- (attr_jl1_ot/attr_jl1_tot) * 100 
+
+
+nttr_jl1_tot <- nttr_df %>% filter(JobLevel == 1) %>% count()
+
+nttr_jl1_ot <- nttr_df %>% filter(JobLevel == 1 & OverTime == "Yes") %>% count()
+
+nttr_ot_prop <- (nttr_jl1_ot/nttr_jl1_tot) * 100 
+
+all_tot <- raw_df %>% count()
+
+all_ot <- raw_df %>% filter(JobLevel != 1 & OverTime == "Yes") %>% count()
+
+all_ot_prop <- (all_ot/all_tot) * 100
+
+#se_tot <- nttr_df %>% filter(JobRole == "Sales Executive" & JobLevel == 2) %>% count()
+#
+#se_ot <- nttr_df %>% filter(JobRole == "Sales Executive" & OverTime == "Yes" & JobLevel == 2) %>% count()
+#
+#se_ot_prop <- (se_ot/se_tot) * 100 
+#
+#
+#
+#se2_tot <- nttr_df %>% filter(JobRole == "Sales Executive") %>% count()
+#
+#se2_ot <- nttr_df %>% filter(JobRole == "Sales Executive" & OverTime == "Yes") %>% count()
+#
+#se2_ot_prop <- (se2_ot/se2_tot) * 100 
+
+
+
+
 
 which(nttr_count$n == max(nttr_count$n))
 
@@ -345,6 +407,80 @@ dim(nttr_rs1 %>% filter(OverTime == "Yes"))
 summary(attr_df)
 
 summary(nttr_df)
+
+ynFlip <-  factor(raw_df$Attrition,levels(raw_df$Attrition)[c(2, 1)])
+
+raw_df %>% ggplot(aes(Attrition, Age, fill= ynFlip)) + geom_boxplot()
+
+raw_df %>% ggplot(aes(Attrition, MonthlyIncome, fill= ynFlip)) + geom_boxplot()
+
+
+
+raw_df %>% ggplot(aes(BusinessTravel, fill=ynFlip)) + geom_bar()
+
+
+raw_df %>% 
+  ggplot(aes(Department,fill = ynFlip)) + 
+  geom_bar() + 
+  scale_x_discrete(limits = c("Human Resources", "Sales", "Research & Development")) +
+  geom_text(aes(x = "Sales", y = 200, label = "Hi\nDude!"))
+
+
+raw_df %>% 
+  ggplot(aes(x=EducationField, y=Education, color = Department)) + 
+  geom_jitter() +
+  theme(axis.text.x = element_text(angle=45, hjust = 1, size = 7))
+
+
+
+
+
+jlOrg <-  factor(attr_df$JobLevel,levels(as.factor(attr_df$JobLevel))[c(5:1)])
+
+raw_df %>% ggplot(aes(x=JobRole, fill = jlOrg)) +
+  geom_bar() + scale_x_discrete(limits = ord2) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+#attr_df %>% ggplot(aes(x=JobRole, fill = jlOrg)) +
+#  geom_bar() + scale_x_discrete(limits = ord2) +
+#  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+
+raw_df %>% 
+  ggplot(aes(Gender,fill=ynFlip))+
+  geom_bar()
+
+
+
+raw_df %>% ggplot(aes(MaritalStatus, fill=ynFlip)) + geom_bar() + scale_x_discrete(limits = c("Single", "Married", "Divorced"))
+
+
+
+raw_df %>% ggplot(aes(NumCompaniesWorked,fill=ynFlip))+geom_bar()
+
+
+raw_df %>% ggplot(aes(OverTime,fill = ynFlip)) + geom_bar()
+
+
+raw_df %>% ggplot(aes(PerformanceRating,fill = ynFlip))+geom_bar()
+
+raw_df %>% ggplot(aes(StockOptionLevel,fill = ynFlip))+geom_bar()
+
+
+raw_df %>% ggplot(aes(TotalWorkingYears,fill = ynFlip))+geom_bar()
+
+
+raw_df %>% ggplot(aes(YearsAtCompany,fill = ynFlip)) + geom_bar()
+raw_df %>% ggplot(aes(YearsInCurrentRole,fill = ynFlip)) + geom_bar()
+raw_df %>% ggplot(aes(YearsSinceLastPromotion,fill = ynFlip)) + geom_bar()
+raw_df %>% ggplot(aes(YearsWithCurrManager,fill = ynFlip)) + geom_bar()
+
+
+
+                  
+
+
+#fct_reorder(raw_df$Attrition)
 
 #dfBreweryByState <- Brewery %>%
 #  group_by(State) %>%
@@ -555,16 +691,16 @@ all_scaled_df
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-normFunc <- function(x){(x-mean(x, na.rm = T))/sd(x, na.rm = T)}
-
-#x<-rnorm(10,14,2)
-#y<-rnorm(10,7,3)
-#z<-rnorm(10,18,5)
-#df<-data.frame(x,y,z)
-
-normFun_df <- f_df %>% mutate_at(vars(colm), list(~normFunc(.) %>% as.vector))
-
-normFun_df
+#normFunc <- function(x){(x-mean(x, na.rm = T))/sd(x, na.rm = T)}
+#
+##x<-rnorm(10,14,2)
+##y<-rnorm(10,7,3)
+##z<-rnorm(10,18,5)
+##df<-data.frame(x,y,z)
+#
+#normFun_df <- f_df %>% mutate_at(vars(colm), list(~normFunc(.) %>% as.vector))
+#
+#normFun_df
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -572,7 +708,7 @@ normFun_df
 
 #library(caret)
 # Assuming goal class is column 10
-preObj <- preProcess(f_df, method=c("center", "scale"))
+#preObj <- preProcess(f_df, method=c("center", "scale"))
 
 
 #newData <- predict(preObj, data[, -10])
@@ -591,7 +727,7 @@ preObj <- preProcess(f_df, method=c("center", "scale"))
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-data.Normalization (x,type="n0",normalization="column")
+#data.Normalization (x,type="n0",normalization="column")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -616,6 +752,8 @@ data.Normalization (x,type="n0",normalization="column")
 #~~~~~~~~~~~~~~~~~~~~~~~Remove Redundant Features
 
 correlationMatrix <- cor(all_scaled_df, use="pairwise.complete.obs")
+
+corrplot(correlationMatrix, tl.cex = 0.5)
 
 #gg_miss_var(correlationMatrix)
 
