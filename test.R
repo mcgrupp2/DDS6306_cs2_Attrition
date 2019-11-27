@@ -17,7 +17,7 @@
 #install.packages("clustMixType")
 #install.packages("mlr")
 #install.packages("gridExtra")
-install.packages("corrplot")
+#install.packages("corrplot")
 
 library(plyr)
 library(tidyverse)
@@ -749,7 +749,7 @@ all_scaled_df
 #cor_matrix <- cor(data.without_na)
 
 
-#~~~~~~~~~~~~~~~~~~~~~~~Remove Redundant Features
+#~~~~~~~~~~~~~~~~~~~~~~~Remove Redundant Features + Corrplot
 
 correlationMatrix <- cor(all_scaled_df, use="pairwise.complete.obs")
 
