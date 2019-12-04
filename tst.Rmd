@@ -1,0 +1,57 @@
+---
+title: "workingEdits"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+```
+
+
+Install/Load Libraries
+```{r}
+#install.packages("tidyverse")
+#install.packages("naniar")
+#install.packages("caret")
+#install.packages('e1071', dependencies = TRUE)
+#install.packages("mlbench")
+#install.packages("fastDummies")
+#install.packages("xgboost")
+#install.packages("mlr")
+#install.packages("gridExtra")
+#install.packages("corrplot")
+
+library(plyr)
+library(tidyverse)
+library(naniar)
+library(GGally)
+library(caret)
+library(e1071)
+library(mlbench)
+library(fastDummies)
+library(xgboost)
+library(class)
+library(mlr)
+library(gridExtra)
+library(corrplot)
+```
+
+## Introduction to the Project
+
+DDSAnalytics is an analytics company that specializes in talent management solutions for Fortune 100 companies. Talent management is defined as the iterative process of developing and retaining employees. It may include workforce planning, employee training programs, identifying high-potential employees and reducing/preventing voluntary employee turnover (attrition). To gain a competitive edge over its competition, DDSAnalytics is planning to leverage data science for talent management. The executive leadership has identified predicting employee turnover as its first application of data science for talent management. Before the business green lights the project, they have tasked your data science team to conduct an analysis of existing employee data. 
+
+You have been given a dataset (CaseStudy2-data.csv) to do a data analysis to identify factors that lead to attrition.  You should identify the top three factors that contribute to turnover (backed up by evidence provided by analysis). There may or may not be a need to create derived attributes/variables/features. The business is also interested in learning about any job role specific trends that may exist in the data set (e.g., ?Data Scientists have the highest job satisfaction?). You can also provide any other interesting trends and observations from your analysis. The analysis should be backed up by robust experimentation and appropriate visualization. Experiments and analysis must be conducted in R. You will also be asked to build a model to predict attrition.  Details are below.  
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
