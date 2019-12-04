@@ -7,9 +7,16 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 ```
 
+# Introduction
+
+DDSAnalytics is an analytics company that specializes in talent management solutions for Fortune 100 companies. Talent management is defined as the iterative process of developing and retaining employees. It may include workforce planning, employee training programs, identifying high-potential employees and reducing/preventing voluntary employee turnover (attrition). To gain a competitive edge over its competition, DDSAnalytics is planning to leverage data science for talent management. The executive leadership has identified predicting employee turnover as its first application of data science for talent management. Before the business green lights the project, they have tasked your data science team to conduct an analysis of existing employee data. 
+
+I have been given a dataset of employee data to analyize to identify factors that lead to attrition.  The top three factors that contribute to turnover will be identified backed up by evidence provided by analysis. In addition a model will be built to predict attrition, and a model to predict employee salary.
+
+***
 
 Install/Load Libraries
-```{r}
+```{r Install Libraries, echo= FALSE}
 #install.packages("tidyverse")
 #install.packages("naniar")
 #install.packages("caret")
@@ -20,6 +27,10 @@ Install/Load Libraries
 #install.packages("mlr")
 #install.packages("gridExtra")
 #install.packages("corrplot")
+
+```
+
+```{r Load Libraries}
 
 library(plyr)
 library(tidyverse)
@@ -36,22 +47,160 @@ library(gridExtra)
 library(corrplot)
 ```
 
-## Introduction to the Project
 
-DDSAnalytics is an analytics company that specializes in talent management solutions for Fortune 100 companies. Talent management is defined as the iterative process of developing and retaining employees. It may include workforce planning, employee training programs, identifying high-potential employees and reducing/preventing voluntary employee turnover (attrition). To gain a competitive edge over its competition, DDSAnalytics is planning to leverage data science for talent management. The executive leadership has identified predicting employee turnover as its first application of data science for talent management. Before the business green lights the project, they have tasked your data science team to conduct an analysis of existing employee data. 
+***
 
-You have been given a dataset (CaseStudy2-data.csv) to do a data analysis to identify factors that lead to attrition.  You should identify the top three factors that contribute to turnover (backed up by evidence provided by analysis). There may or may not be a need to create derived attributes/variables/features. The business is also interested in learning about any job role specific trends that may exist in the data set (e.g., ?Data Scientists have the highest job satisfaction?). You can also provide any other interesting trends and observations from your analysis. The analysis should be backed up by robust experimentation and appropriate visualization. Experiments and analysis must be conducted in R. You will also be asked to build a model to predict attrition.  Details are below.  
+# Exploratory Data Analysis
 
-```{r cars}
-summary(cars)
+***
+
+### Load Data
+
+```{r dataLoad}
+# Read the data with attrition and salaries
+
+raw_df <- read.csv("attritApp/data/CaseStudy2-data.csv")
+
+# Summary Stats of Dataframe
+
+dim(raw_df)
+
+names(raw_df)
+
+summary(raw_df)
+
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+#### Subsetting raw_df into Attrition groups
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r subsetting}
+
+# Employees w. Attrition
+
+attr_df <- raw_df %>% filter(Attrition == "Yes")
+
+# Employees w.o Atrrition
+
+nttr_df <- raw_df %>% filter(Attrition == "No")
+
+# Redundant Group Summaries
+#summary(attr_df)
+
+#summary(nttr_df)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+***
+
+### Check for missing values in the dataset
+
+```{r gg_miss_var, echo=FALSE}
+
+gg_miss_var(raw_df)
+
+```
+
+- No missing values in the primary dataset.
+
+***
+
+### Company Data Exploration
+
+We would like to visualize some data to get a general idea about this company. 
+
+***
+
+*The follow visualizations will represent the data from the primary dataset which was provided, the "Comp" datasets were not included in this EDA*
+
+```{r, echo=FALSE}
+
+#incomeHist <- 
+raw_df %>% 
+  ggplot(aes(x = MonthlyIncome, y = ..count.., color = Department, fill = Department)) + 
+  theme_minimal() +
+  geom_histogram(bins = 50, alpha = 0.85) + 
+  labs(x = "Monthly Income ($)", y = "Number of Employees", title = "Range of Monthly Income")
+
+
+
+#raw_df %>% 
+#  ggplot(aes(x=reorder(JobLevel, MonthlyIncome), y=MonthlyIncome)) + 
+#  geom_boxplot(aes(fill=Attrition)) 
+#
+#
+#raw_df %>% 
+#  ggplot(aes(x=reorder(JobRole, MonthlyIncome), y=MonthlyIncome)) + 
+#  geom_boxplot(aes(fill=Attrition)) 
+#
+
+
+```
+
+***
+
+```{r, echo=FALSE}
+
+#levelIncomeBox <- 
+raw_df %>% 
+  ggplot(aes(x=reorder(JobLevel, MonthlyIncome), y=MonthlyIncome, fill = as.factor(JobLevel))) + 
+  geom_boxplot() + 
+  labs(x = "Job Level", y = "Monthly Income  ($)", title = "Ranges of Income by Job Level") +
+  theme(legend.position = "none")
+
+```
+
+***
+
+```{r, echo=FALSE}
+#roleIncomeBox <- 
+raw_df %>% 
+  ggplot(aes(x=reorder(JobRole, MonthlyIncome), y=MonthlyIncome, fill = JobRole)) + 
+  geom_boxplot()+ 
+  labs(x = "Job Role", y = "Monthly Income", title = "Ranges of Income by Job Role ($)") + 
+  theme(axis.text.x = element_text(angle=15, hjust = 1, size = 7), legend.position = "none")
+
+```
+
+***
+
+```{r, echo=FALSE}
+
+
+
+```
+```{r, echo=FALSE}
+
+
+
+```
+```{r, echo=FALSE}
+
+
+
+```
+```{r, echo=FALSE}
+
+
+
+```
+```{r, echo=FALSE}
+
+
+
+```
+```{r, echo=FALSE}
+
+
+
+```
+```{r, echo=FALSE}
+
+
+
+```
+```{r, echo=FALSE}
+
+
+
+```

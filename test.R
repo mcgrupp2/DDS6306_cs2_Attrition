@@ -43,10 +43,15 @@ library(corrplot)
 raw_df <- read.csv("attritApp/data/CaseStudy2-data.csv")
 #raw_df
 
+# Employees w. Attrition
+
 attr_df <- raw_df %>% filter(Attrition == "Yes")
 
 
+# Employees w.o Atrrition
+
 nttr_df <- raw_df %>% filter(Attrition == "No")
+
 
 
 nttr_df %>% group_by(Department)
@@ -57,101 +62,105 @@ nttr_df %>% group_by(Department)
 
 #summary(nttr_df)
 
-#No missing vals
+#Check for missing vals
+
+
 gg_miss_var(raw_df)
+
+#No missing vals
 
 names(raw_df)
 str(raw_df)
 
 raw_df %>% ggplot(aes(x = MonthlyIncome, y = ..count..)) + geom_histogram(bins = 50)
 
-# divide by 1000
-
-maxMonthlyIncome <- max(f_df$MonthlyIncome)
-
-minMonthlyIncome <- min(f_df$MonthlyIncome)
-
-MonthlyIncome_rng <- maxMonthlyIncome - minMonthlyIncome
-
-maxMonthlyIncome
-
-minMonthlyIncome
-
-MonthlyIncome_rng
-
-
-# Divide by 100
-
-maxDailyRate <- max(f_df$DailyRate)
-
-minDailyRate <- min(f_df$DailyRate)
-
-DailyRate_rng <- maxDailyRate - minDailyRate
-
-maxDailyRate
-
-minDailyRate
-
-DailyRate_rng
-
-
-
-# divide by 1000
-
-
-maxMonthlyRate <- max(f_df$MonthlyRate)
-
-minMonthlyRate <- min(f_df$MonthlyRate)
-
-MonthlyRate_rng <- maxMonthlyRate - minMonthlyRate
-
-maxMonthlyRate
-
-minMonthlyRate
-
-MonthlyRate_rng
-
-
-maxPercentSalaryHike <- max(raw_df$PercentSalaryHike)
-
-minPercentSalaryHike <- min(raw_df$PercentSalaryHike)
-
-PercentSalaryHike_rng <- maxPercentSalaryHike - minPercentSalaryHike
-
-maxPercentSalaryHike
-
-minPercentSalaryHike
-
-PercentSalaryHike_rng
-
-#raw_df$WorkLifeBalance
-
-#Compare worklifebalance to monthly income
-
-raw_df
-
-names(raw_df)
-
-
-all_col_names <- c("ID", "Age", "Attrition", "BusinessTravel", "DailyRate", "Department", 
-                   "DistanceFromHome", "Education", "EducationField", "EmployeeCount", 
-                   "EmployeeNumber", "EnvironmentSatisfaction", "Gender", "HourlyRate", 
-                   "JobInvolvement" , "JobLevel", "JobRole", "JobSatisfaction", "MaritalStatus",
-                   "MonthlyIncome", "MonthlyRate", "NumCompaniesWorked", "Over18", "PercentSalaryHike", 
-                   "PerformanceRating", "RelationshipSatisfaction", "StandardHours", "StockOptionLevel", 
-                   "TotalWorkingYears", "TrainingTimesLastYear", "WorkLifeBalance", "YearsAtCompany", 
-                   "YearsInCurrentRole", "YearsSinceLastPromotion", "YearsWithCurrManager")    
-
-
-colnm_len <- 1:length(all_col_names)
-
-
-col_nm_df <- as.data.frame(x = all_col_names)
-
-
-cont_var_inx <- c(2, 3, 5, 6, 7, 13, 14, 20, 21, 22, 24, 25, 27, 29, 30, 32, 34, 35)
-
-ord_var_inx <- c(3, 4, 6, 8, 9, 12, 13, 15, 16, 18, 19, 25, 26, 28, 30, 31)
+## divide by 1000
+#
+#maxMonthlyIncome <- max(f_df$MonthlyIncome)
+#
+#minMonthlyIncome <- min(f_df$MonthlyIncome)
+#
+#MonthlyIncome_rng <- maxMonthlyIncome - minMonthlyIncome
+#
+#maxMonthlyIncome
+#
+#minMonthlyIncome
+#
+#MonthlyIncome_rng
+#
+#
+## Divide by 100
+#
+#maxDailyRate <- max(f_df$DailyRate)
+#
+#minDailyRate <- min(f_df$DailyRate)
+#
+#DailyRate_rng <- maxDailyRate - minDailyRate
+#
+#maxDailyRate
+#
+#minDailyRate
+#
+#DailyRate_rng
+#
+#
+#
+## divide by 1000
+#
+#
+#maxMonthlyRate <- max(f_df$MonthlyRate)
+#
+#minMonthlyRate <- min(f_df$MonthlyRate)
+#
+#MonthlyRate_rng <- maxMonthlyRate - minMonthlyRate
+#
+#maxMonthlyRate
+#
+#minMonthlyRate
+#
+#MonthlyRate_rng
+#
+#
+#maxPercentSalaryHike <- max(raw_df$PercentSalaryHike)
+#
+#minPercentSalaryHike <- min(raw_df$PercentSalaryHike)
+#
+#PercentSalaryHike_rng <- maxPercentSalaryHike - minPercentSalaryHike
+#
+#maxPercentSalaryHike
+#
+#minPercentSalaryHike
+#
+#PercentSalaryHike_rng
+#
+##raw_df$WorkLifeBalance
+#
+##Compare worklifebalance to monthly income
+#
+#raw_df
+#
+#names(raw_df)
+#
+#
+#all_col_names <- c("ID", "Age", "Attrition", "BusinessTravel", "DailyRate", "Department", 
+#                   "DistanceFromHome", "Education", "EducationField", "EmployeeCount", 
+#                   "EmployeeNumber", "EnvironmentSatisfaction", "Gender", "HourlyRate", 
+#                   "JobInvolvement" , "JobLevel", "JobRole", "JobSatisfaction", "MaritalStatus",
+#                   "MonthlyIncome", "MonthlyRate", "NumCompaniesWorked", "Over18", "PercentSalaryHike", 
+#                   "PerformanceRating", "RelationshipSatisfaction", "StandardHours", "StockOptionLevel", 
+#                   "TotalWorkingYears", "TrainingTimesLastYear", "WorkLifeBalance", "YearsAtCompany", 
+#                   "YearsInCurrentRole", "YearsSinceLastPromotion", "YearsWithCurrManager")    
+#
+#
+#colnm_len <- 1:length(all_col_names)
+#
+#
+#col_nm_df <- as.data.frame(x = all_col_names)
+#
+#
+#cont_var_inx <- c(2, 3, 5, 6, 7, 13, 14, 20, 21, 22, 24, 25, 27, 29, 30, 32, 34, 35)
+#
+#ord_var_inx <- c(3, 4, 6, 8, 9, 12, 13, 15, 16, 18, 19, 25, 26, 28, 30, 31)
 
 
 raw_df %>% ggplot(aes(x=WorkLifeBalance, y=MonthlyIncome)) + geom_jitter()
@@ -249,9 +258,17 @@ nttr_count  <-  nttr_df %>% count(JobRole, JobLevel, Department) %>% mutate(prop
 
 nttr_count <- nttr_count %>% mutate(prop = round((nttr_count$n/sum(nttr_count$n))*100, 2))
 
+attr_count_labels[12,] <- c("Manager", 4, "Research & Development", 24, 3.03)
+
+attr_count_labels[13,] <- c("Manager", 5, "Sales", 3, 2.14)
+
+attr_count_labels[9,] <- c("Manager", 5, "Research & Development", 3, 2.14)
+
+
+
 
 raw_df %>% 
-  ggplot(aes(x=JobRole, y=JobLevel, color = Department)) +
+  ggplot(aes(x=JobRole, y=JobLevel)) +
   geom_count() + scale_x_discrete(limits = ord) +
   geom_text(data = df_count, 
     aes(df_count$JobRole, 
