@@ -61,7 +61,7 @@ library(reshape2)
 ```{r dataLoad}
 # Read the data with attrition and salaries
 
-raw_df <- read.csv("attritApp/data/CaseStudy2-data.csv")
+raw_df <- read.csv("data/CaseStudy2-data.csv")
 
 # Summary Stats of Dataframe
 
