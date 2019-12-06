@@ -1,5 +1,8 @@
 ---
-title: "workingEdits"
+title: "Factors Leading to Employee Attrition"
+author: "Jason Rupp"
+subtitle: "DDS_6306"
+date: "6 Dec 19"
 output: html_document
 ---
 
@@ -31,12 +34,11 @@ Install/Load Libraries
 
 ```
 
-```{r Load Libraries}
+```{r Load Libraries, results='hide'}
 
 library(plyr)
 library(tidyverse)
 library(naniar)
-library(GGally)
 library(caret)
 library(e1071)
 library(mlbench)
@@ -200,6 +202,11 @@ names(f_df)[[5]] <- "EnvironmentSatisfaction"
 names(f_df)[[6]] <-  "HourlyRate"
 names(f_df)[[9]] <- "JobSatisfaction"
 
+```
+
+***
+
+```{r featureScaling}
 
 #~~~~~~~~~~~~~~~~Scaling features
 
@@ -209,6 +216,13 @@ cola <- c("DailyRate", "DistanceFromHome", "HourlyRate", "MonthlyIncome", "Month
 
 all_scaled_df <- f_df %>% mutate_at(vars(cola), list(~scale(.) %>% as.vector))
 
+
+
+```
+
+***
+
+```{r Remove Redundant Features + Corrplot}
 
 #~~~~~~~~~~~~~~~~~~~~~~~Remove Redundant Features + Corrplot
 
@@ -221,6 +235,12 @@ corrplot(correlationMatrix, tl.cex = 0.5)
 highlyCorrelated <- findCorrelation(correlationMatrix, cutoff = 0.75)
 
 f_df <- all_scaled_df[,-(highlyCorrelated)]
+
+```
+
+***
+
+```{r featureSelection}
 
 #~~~~~~~~~~~~~~~~~~~~Feature Selection (Automatic)------LONG LOAD
 
@@ -236,6 +256,7 @@ plot(results, type=c("g", "o"))
 
 ```
 
+***
 
 ```{r knn model Attrition}
 
