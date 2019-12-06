@@ -314,22 +314,159 @@ max(MeanSpec)
 
 ```{r, echo=FALSE}
 
+pd_mx <- data.matrix(pd_df)
 
+t_splt <- sample(seq(1:(dim(pd_df)[[1]])), (round(dim(pd_df)[[1]] * .7)))
+
+x_train_data <- pd_mx[t_splt,]
+
+x_train_labels <- sapply(raw_df[t_splt, 3], function(x) ifelse(x == "Yes", 1, 0))
+
+x_test_data <- pd_mx[-(t_splt),]
+
+x_test_labels <- sapply(raw_df[-(t_splt), 3], function(x) ifelse(x == "Yes", 1, 0))
+
+train_dmx <- xgb.DMatrix(data = x_train_data, label = x_train_labels)
+
+dtest_dmx <- xgb.DMatrix(data = x_test_data, label = x_test_labels)
+
+positive_cases <- (sum(x_train_labels == 1) + sum(x_train_labels == 1))
+
+negative_cases <- (sum(x_test_labels == 0) + sum(x_test_labels == 0))
+
+#~~~~~~~~~~~~ Normal XGBOOST
+
+xgb_model <- xgboost(data = train_dmx,          
+                       max.depth = 5, 
+                       nround = 200, 
+                       early_stopping_rounds = 10, 
+                       eval_metric = "auc",
+                       objective = "binary:logistic",
+                       print_every_n = 10,
+                       scale_pos_weight = negative_cases/positive_cases)
+
+# generate predictions for our held-out testing data
+pred <- predict(xgb_model, dtest_dmx)
+
+confusionMatrix(table(as.numeric(pred > 0.5), x_test_labels))
+
+# get & print the classification error
+err <- mean(as.numeric(pred > 0.5) != x_test_labels)
+print(paste("test-auc=", err))
+
+
+feature_importance <- xgb.importance(names(pd_mx), model = xgb_model)
+
+# and plot it!
+xgb.plot.importance(feature_importance)
+
+
+```
+
+
+```{r, echo=FALSE}
+
+#~~~~~~~~~~~~~~~~ HyperTuning XGBoost~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+hp_df <- pd_df
+
+hp_splt <- sample(seq(1:(dim(pd_df)[[1]])), (round(dim(pd_df)[[1]] * .7)))
+
+hp_train_data_raw <- pd_df[hp_splt,]
+
+hp_train_labels <- sapply(raw_df[hp_splt, 3], function(x) ifelse(x == "Yes", 1, 0))
+
+hp_test_data_raw <- pd_df[hp_splt,]
+
+hp_test_labels <- sapply(raw_df[hp_splt, 3], function(x) ifelse(x == "Yes", 1, 0))
+
+hp_train_data <- as.data.frame(cbind(hp_train_data_raw, as.factor(hp_train_labels)))
+
+hp_test_data <- as.data.frame(cbind(hp_test_data_raw, as.factor(hp_test_labels)))
+
+names(hp_train_data)[[6]] <- c("JobRoleSalesRepresentative")
+
+names(hp_train_data)[[15]] <- c("JobRole_ResearchDirector")
+
+names(hp_train_data)[[17]] <- c("JobRole_ManufacturingDirector")
+
+names(hp_train_data)[[20]] <- c("JobRole_SalesExecutive")
+
+names(hp_train_data)[[22]] <- c("EducationField_HumanResources")
+
+names(hp_train_data)[[24]] <- c("Attrition")
+
+names(hp_test_data)[[6]] <- c("JobRoleSalesRepresentative")
+
+names(hp_test_data)[[15]] <- c("JobRole_ResearchDirector")
+
+names(hp_test_data)[[17]] <- c("JobRole_ManufacturingDirector")
+
+names(hp_test_data)[[20]] <- c("JobRole_SalesExecutive")
+
+names(hp_test_data)[[22]] <- c("EducationField_HumanResources")
+
+names(hp_test_data)[[24]] <- c("Attrition")
+
+```
+
+
+```{r, echo=FALSE, results='hide'}
+
+
+traintask <- makeClassifTask (data = hp_train_data, target = "Attrition")
+
+
+testtask <- makeClassifTask (data = hp_test_data, target = "Attrition")
+
+lrn <- makeLearner("classif.xgboost", predict.type = "response")
+
+lrn$par.vals <- list( objective="binary:logistic", 
+                      eval_metric="error", 
+                      nrounds=100L, 
+                      eta=0.1)
+
+#set parameter space
+params <- makeParamSet(makeDiscreteParam("booster",values = c("gbtree","gblinear")), 
+                       makeIntegerParam("max_depth",lower = 3L,upper = 10L), 
+                       makeNumericParam("min_child_weight",lower = 1L,upper = 10L), 
+                       makeNumericParam("subsample",lower = 0.5,upper = 1), 
+                       makeNumericParam("colsample_bytree",lower = 0.5,upper = 1))
+
+#set resampling strategy
+rdesc <- makeResampleDesc("CV",
+                           stratify = T,
+                           iters=10L)
+
+
+
+#search strategy
+ctrl <- makeTuneControlRandom(maxit = 10L)
+
+#parameter tuning
+mytune <- tuneParams(learner = lrn, 
+                     task = traintask, 
+                     resampling = rdesc, 
+                     measures = acc,
+                     par.set = params, 
+                     control = ctrl, 
+                     show.info = T)
+#mytune$y
+
+
+#set hyperparameters
+lrn_tune <- setHyperPars(lrn,par.vals = mytune$x)
+
+#train model
+xgmodel <- train(learner = lrn_tune,task = traintask)
+
+#predict model
+xgpred <- predict(xgmodel,testtask)
 
 ```
 ```{r, echo=FALSE}
 
-
-
-```
-```{r, echo=FALSE}
-
-
-
-```
-```{r, echo=FALSE}
-
-
+confusionMatrix(xgpred$data$response,xgpred$data$truth)
 
 ```
 ```{r, echo=FALSE}

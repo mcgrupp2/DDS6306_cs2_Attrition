@@ -981,7 +981,7 @@ traintask <- makeClassifTask (data = hp_train_data, target = "train_labels")
 testtask <- makeClassifTask (data = hp_test_data, target = "test_labels")
 
 
-makeTask 
+#makeTask 
 
 
 #create learner
@@ -1009,10 +1009,10 @@ rdesc <- makeResampleDesc("CV",
 #search strategy
 ctrl <- makeTuneControlRandom(maxit = 10L)
 
-#set parallel backend
-library(parallel)
-library(parallelMap) 
-parallelStartSocket(cpus = detectCores())
+##set parallel backend
+#library(parallel)
+#library(parallelMap) 
+#parallelStartSocket(cpus = detectCores())
  
 #parameter tuning
 mytune <- tuneParams(learner = lrn, 
@@ -1022,7 +1022,7 @@ mytune <- tuneParams(learner = lrn,
                      par.set = params, 
                      control = ctrl, 
                      show.info = T)
-mytune$y
+#mytune$y
 
 
 #set hyperparameters
