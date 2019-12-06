@@ -27,6 +27,7 @@ Install/Load Libraries
 #install.packages("mlr")
 #install.packages("gridExtra")
 #install.packages("corrplot")
+#install.packages("reshape2")
 
 ```
 
@@ -45,6 +46,7 @@ library(class)
 library(mlr)
 library(gridExtra)
 library(corrplot)
+library(reshape2)
 ```
 
 
@@ -157,23 +159,138 @@ raw_df %>%
 raw_df %>% 
   ggplot(aes(x=reorder(JobRole, MonthlyIncome), y=MonthlyIncome, fill = JobRole)) + 
   geom_boxplot()+ 
-  labs(x = "Job Role", y = "Monthly Income", title = "Ranges of Income by Job Role") + 
+  labs(x = "Job Role", y = "Monthly Income", title = "Ranges of Income by Job Roe") + 
   theme(axis.text.x = element_text(angle=15, hjust = 1, size = 7), legend.position = "none")
 
 ```
 
 ***
 
-```{r, echo=FALSE}
+
+
+```{r dataPrep}
+
+set.seed(22)
+
+fs_df <- cbind(raw_df[,2], raw_df[,4:36])
+
+# Create dummy columns for categorical data
+
+fs_df <- dummy_cols(fs_df)
+
+# Remove categorical cols, replaced with dummies
+
+f_df <- cbind(fs_df[,1],
+              fs_df[,3],
+              fs_df[,5:6],   
+              fs_df[,10],    
+              fs_df[,12],
+              fs_df[,13:14], 
+              fs_df[,16],    
+              fs_df[,18:20], 
+              fs_df[,23:25],
+              fs_df[,27:60],
+              fs_df[,62:63]) 
+
+# Fix names
+
+names(f_df)[[1]] <- "Age"
+names(f_df)[[2]] <- "DailyRate"
+names(f_df)[[5]] <- "EnvironmentSatisfaction"
+names(f_df)[[6]] <-  "HourlyRate"
+names(f_df)[[9]] <- "JobSatisfaction"
+
+
+#~~~~~~~~~~~~~~~~Scaling features
+
+cola <- c("DailyRate", "DistanceFromHome", "HourlyRate", "MonthlyIncome", "MonthlyRate",      
+          "PercentSalaryHike", "TotalWorkingYears", "YearsAtCompany", "YearsInCurrentRole", 
+          "YearsSinceLastPromotion", "YearsWithCurrManager")
+
+all_scaled_df <- f_df %>% mutate_at(vars(cola), list(~scale(.) %>% as.vector))
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~Remove Redundant Features + Corrplot
+
+correlationMatrix <- cor(all_scaled_df, use="pairwise.complete.obs")
+
+corrplot(correlationMatrix, tl.cex = 0.5)
+
+# Search for the highly correlated features to remove for ML models
+
+highlyCorrelated <- findCorrelation(correlationMatrix, cutoff = 0.75)
+
+f_df <- all_scaled_df[,-(highlyCorrelated)]
+
+#~~~~~~~~~~~~~~~~~~~~Feature Selection (Automatic)------LONG LOAD
+
+control <- rfeControl(functions=rfFuncs, method="cv", number=10)
+
+results <- rfe(f_df, raw_df[,3], sizes=c(1:42), rfeControl=control)
+
+p_inx <- predictors(results)
+
+pd_df <- all_scaled_df[,p_inx]
+
+plot(results, type=c("g", "o"))
+
+```
+
+
+```{r knn model Attrition}
+
+set.seed(22)
+iterations = 500
+numks = 20
+splitPerc = .7
+masterAcc = matrix(nrow = iterations, ncol = numks)
+masterSens = matrix(nrow = iterations, ncol = numks)
+masterSpec = matrix(nrow = iterations, ncol = numks)
+for(j in 1:iterations)
+{
+  k_inx = sample(1:dim(pd_df)[1],round(splitPerc * dim(pd_df)[1]))
+  
+  k_trn_data <- pd_df[k_inx,]
+  
+  k_tst_data <- pd_df[-k_inx,]
+  
+  #cl = raw_df[k_inx, 3]
+  
+  for(i in 1:numks)
+  {
+    classifications = knn(k_trn_data, 
+                          k_tst_data, 
+                          raw_df[k_inx, 3], 
+                          prob = TRUE, k = i)
+    table(classifications,raw_df[-k_inx, 3])
+    CM = confusionMatrix(table(classifications, raw_df[-k_inx, 3]))
+    masterAcc[j,i] = CM$overall[1]
+    masterSens[j,i] = CM$byClass[1]
+    masterSpec[j,i] = CM$byClass[2]
+  }
+  
+}
+
+MeanAcc = colMeans(masterAcc)
+plot(seq(1,numks,1),MeanAcc, type = "l", main = "Overall Accuracy", xlab = "Number of k(s)", ylab = "Mean Accuracy")
+which.max(MeanAcc)
+max(MeanAcc)
+
+MeanSens = colMeans(masterSens)
+plot(seq(1,numks,1),MeanSens, type = "l", main = "Overall Sensitivy", xlab = "Number of k(s)", ylab = "Mean Sensitivy")
+which.max(MeanSens)
+max(MeanSens)
+
+MeanSpec = colMeans(masterSpec)
+plot(seq(1,numks,1),MeanSpec, type = "l", main = "Overall Specificity", xlab = "Number of k(s)", ylab = "Mean Specificity")
+which.max(MeanSpec)
+max(MeanSpec)
 
 
 
 ```
-```{r, echo=FALSE}
 
 
-
-```
 ```{r, echo=FALSE}
 
 

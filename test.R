@@ -496,90 +496,10 @@ raw_df %>% ggplot(aes(YearsWithCurrManager,fill = ynFlip)) + geom_bar()
 
 
 
-                  
-
-
-#fct_reorder(raw_df$Attrition)
-
-#dfBreweryByState <- Brewery %>%
-#  group_by(State) %>%
-#  summarize(BreweryCount = n()) %>% rename(state = State)
-#head(dfBreweryByState %>% arrange(desc(dfBreweryByState$BreweryCount)), n=3)
-
-
-
-#Maybe do some k-means to find clusters?
-
-#Make shiny app with multiselect input to do
-
-# small function to display plots only if it's interactive
-p_ <- GGally::print_if_interactive
-
-
-## Quick example, with and without colour
-data(flea)
-ggpairs(flea, columns = 2:4)
-pm <- ggpairs(flea, columns = 2:4, ggplot2::aes(colour=species))
-p_(pm)
-
-
-glly_df <- raw_df[,c(2, 5, 7, 13, 15, 16, 17, 19, 20, 21, 22, 23, 27, 28, 30)]
-ggpairs(glly_df)
 
 
 
 
-
-#~~~~~~~~~~~~~~Dendrogram-------------------------
-
-
-
-iris2 <- iris[,-5]
-
-d_iris <- dist(raw_df) # method="man" # is a bit better
-hc_iris <- hclust(d_iris, method = "complete")
-iris_species <- rev(levels(iris[,5]))
-#install.packages("dendextend")
-library(dendextend)
-dend <- as.dendrogram(hc_iris)
-
-#dend <- rotate(dend, 1:150)
-
-# Color the branches based on the clusters:
-dend <- color_branches(dend, k=2) #, groupLabels=iris_species)
-
-# Manually match the labels, as much as possible, to the real classification of the flowers:
-labels_colors(dend) <-
-  rainbow_hcl(3)[sort_levels_values(
-    as.numeric(iris[,5])[order.dendrogram(dend)]
-  )]
-
-# We shall add the flower type to the labels:
-labels(dend) <- raw_df$ID #paste(as.character(iris[,5])[order.dendrogram(dend)],
-                      #"(",labels(dend),")", 
-                      #sep = "")
-# We hang the dendrogram a bit:
-dend <- hang.dendrogram(dend,hang_height=0.1)
-# reduce the size of the labels:
-# dend <- assign_values_to_leaves_nodePar(dend, 0.5, "lab.cex")
-dend <- set(dend, "labels_cex", 0.5)
-# And plot:
-par(mar = c(3,3,3,7))
-plot(dend, 
-     main = "Clustered Iris data set
-     (the labels give the true flower species)", 
-     horiz =  TRUE,  nodePar = list(cex = .007))
-#legend("topleft", legend = iris_species, fill = rainbow_hcl(3))
-
-#install.packages("circlize")
-library(circlize)
-
-
-circlize_dendrogram(dend)
-
-
-
-plot(dend)
 
 
 #~~~~~~~~~~~~~~~~~~~~Feature Selection~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -641,7 +561,7 @@ fs_df %>% as.tibble()
 str(f_df)
 
 
-
+preScl_f_df <- f_df
 
 
 
@@ -774,7 +694,7 @@ correlationMatrix <- cor(all_scaled_df, use="pairwise.complete.obs")
 
 correlationMatrix
 
-correlationMatrix[lower.tri(CM, diag = TRUE)] <- NA          # lower tri and diag set to NA
+correlationMatrix[lower.tri(correlationMatrix, diag = TRUE)] <- NA          # lower tri and diag set to NA
 corr_df <- as.data.frame(subset(melt(correlationMatrix, na.rm = TRUE), value > .45))
 
 corr_df %>% filter(Var1 == "MonthlyIncome")
@@ -800,6 +720,8 @@ print(all_scaled_df[,highlyCorrelated])
 print(all_scaled_df[,-(highlyCorrelated)])
 
 f_df <- all_scaled_df[,-(highlyCorrelated)]
+
+preScl_f_df <- preScl_f_df[,-(highlyCorrelated)]
 
 
 #tmp_df <- cbind(f_df, raw_df[,])
@@ -1199,11 +1121,16 @@ confusionMatrix(xgpred$data$response,xgpred$data$truth)
 #~~~~~~~~~~~~Pull tuning loop out to cycle xgboost
 
 
+#~~~~~~~~~~~~~~~~~~~~~~~~pd_df
+
+
 set.seed(22)
 iterations = 500
-numks = 60
+numks = 20
 splitPerc = .7
 masterAcc = matrix(nrow = iterations, ncol = numks)
+masterSens = matrix(nrow = iterations, ncol = numks)
+masterSpec = matrix(nrow = iterations, ncol = numks)
 for(j in 1:iterations)
 {
   k_inx = sample(1:dim(pd_df)[1],round(splitPerc * dim(pd_df)[1]))
@@ -1212,24 +1139,136 @@ for(j in 1:iterations)
   
   k_tst_data <- pd_df[-k_inx,]
   
-  cl = raw_df[k_inx, 3]
+  #cl = raw_df[k_inx, 3]
   
   for(i in 1:numks)
   {
     classifications = knn(k_trn_data, 
                           k_tst_data, 
-                             cl, 
-                             prob = TRUE, k = i)
-    table(classifications,cl)
-    CM = confusionMatrix(table(classifications))
+                          raw_df[k_inx, 3], 
+                          prob = TRUE, k = i)
+    table(classifications,raw_df[-k_inx, 3])
+    CM = confusionMatrix(table(classifications, raw_df[-k_inx, 3]))
     masterAcc[j,i] = CM$overall[1]
+    masterSens[j,i] = CM$byClass[1]
+    masterSpec[j,i] = CM$byClass[2]
   }
   
 }
 MeanAcc = colMeans(masterAcc)
-plot(seq(1,numks,1),MeanAcc, type = "l")
+plot(seq(1,numks,1),MeanAcc, type = "l", main = "Overall Accuracy", xlab = "Number of k(s)", ylab = "Mean Accuracy")
 which.max(MeanAcc)
 max(MeanAcc)
+
+MeanSens = colMeans(masterSens)
+plot(seq(1,numks,1),MeanSens, type = "l", main = "Overall Sensitivy", xlab = "Number of k(s)", ylab = "Mean Sensitivy")
+which.max(MeanSens)
+max(MeanSens)
+
+MeanSpec = colMeans(masterSpec)
+plot(seq(1,numks,1),MeanSpec, type = "l", main = "Overall Specificity", xlab = "Number of k(s)", ylab = "Mean Specificity")
+which.max(MeanSpec)
+max(MeanSpec)
+
+
+
+##~~~~~~~~~~~~~~~~~~f_df
+#
+#set.seed(22)
+#iterations = 500
+#numks = 20
+#splitPerc = .7
+#masterAcc = matrix(nrow = iterations, ncol = numks)
+#masterSens = matrix(nrow = iterations, ncol = numks)
+#masterSpec = matrix(nrow = iterations, ncol = numks)
+#for(j in 1:iterations)
+#{
+#  k_inx = sample(1:dim(f_df)[1],round(splitPerc * dim(f_df)[1]))
+#  
+#  k_trn_data <- f_df[k_inx,]
+#  
+#  k_tst_data <- f_df[-k_inx,]
+#  
+#  #cl = raw_df[k_inx, 3]
+#  
+#  for(i in 1:numks)
+#  {
+#    classifications = knn(k_trn_data, 
+#                          k_tst_data, 
+#                          raw_df[k_inx, 3], 
+#                             prob = TRUE, k = i)
+#    table(classifications,raw_df[-k_inx, 3])
+#    CM = confusionMatrix(table(classifications, raw_df[-k_inx, 3]))
+#    masterAcc[j,i] = CM$overall[1]
+#    masterSens[j,i] = CM$byClass[1]
+#    masterSpec[j,i] = CM$byClass[2]
+#  }
+#  
+#}
+#MeanAcc = colMeans(masterAcc)
+#plot(seq(1,numks,1),MeanAcc, type = "l")
+#which.max(MeanAcc)
+#max(MeanAcc)
+#
+#MeanSens = colMeans(masterSens)
+#plot(seq(1,numks,1),MeanSens, type = "l")
+#which.max(MeanSens)
+#max(MeanSens)
+#
+#MeanSpec = colMeans(masterSpec)
+#plot(seq(1,numks,1),MeanSpec, type = "l")
+#which.max(MeanSpec)
+#max(MeanSpec)
+#
+#
+##~~~~~~~~~~~~~~~~~~~~~~~~preScl_f_df
+#
+#
+#set.seed(22)
+#iterations = 500
+#numks = 20
+#splitPerc = .7
+#masterAcc = matrix(nrow = iterations, ncol = numks)
+#masterSens = matrix(nrow = iterations, ncol = numks)
+#masterSpec = matrix(nrow = iterations, ncol = numks)
+#for(j in 1:iterations)
+#{
+#  k_inx = sample(1:dim(preScl_f_df)[1],round(splitPerc * dim(preScl_f_df)[1]))
+#  
+#  k_trn_data <- preScl_f_df[k_inx,]
+#  
+#  k_tst_data <- preScl_f_df[-k_inx,]
+#  
+#  #cl = raw_df[k_inx, 3]
+#  
+#  for(i in 1:numks)
+#  {
+#    classifications = knn(k_trn_data, 
+#                          k_tst_data, 
+#                          raw_df[k_inx, 3], 
+#                          prob = TRUE, k = i)
+#    table(classifications,raw_df[-k_inx, 3])
+#    CM = confusionMatrix(table(classifications, raw_df[-k_inx, 3]))
+#    masterAcc[j,i] = CM$overall[1]
+#    masterSens[j,i] = CM$byClass[1]
+#    masterSpec[j,i] = CM$byClass[2]
+#  }
+#  
+#}
+#MeanAcc = colMeans(masterAcc)
+#plot(seq(1,numks,1),MeanAcc, type = "l")
+#which.max(MeanAcc)
+#max(MeanAcc)
+#
+#MeanSens = colMeans(masterSens)
+#plot(seq(1,numks,1),MeanSens, type = "l")
+#which.max(MeanSens)
+#max(MeanSens)
+#
+#MeanSpec = colMeans(masterSpec)
+#plot(seq(1,numks,1),MeanSpec, type = "l")
+#which.max(MeanSpec)
+#max(MeanSpec)
 
 
 raw_df
