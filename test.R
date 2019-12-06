@@ -6,6 +6,7 @@
 # https://rstudio-pubs-static.s3.amazonaws.com/397345_30101161deeb4def9bf3570e8899d859.html
 # https://www.kaggle.com/vsdwivedi/a-detailed-study-on-employee-attrition
 # https://rpubs.com/Himeshme/Attrition
+# https://rpubs.com/CJ_09/Emp_Attrition_Final
 
 #install.packages("tidyverse")
 #install.packages("naniar")
@@ -18,6 +19,7 @@
 #install.packages("mlr")
 #install.packages("gridExtra")
 #install.packages("corrplot")
+install.packages("reshape2")
 
 library(plyr)
 library(tidyverse)
@@ -34,7 +36,7 @@ library(mlr)
 library(gridExtra)
 library(forcats)
 library(corrplot)
-
+library(reshape2)
 
 
 
@@ -770,6 +772,17 @@ all_scaled_df
 
 correlationMatrix <- cor(all_scaled_df, use="pairwise.complete.obs")
 
+correlationMatrix
+
+correlationMatrix[lower.tri(CM, diag = TRUE)] <- NA          # lower tri and diag set to NA
+corr_df <- as.data.frame(subset(melt(correlationMatrix, na.rm = TRUE), value > .45))
+
+corr_df %>% filter(Var1 == "MonthlyIncome")
+
+# JobLevel 0.9516400
+# TotalWorkingYears 0.7785112
+
+
 corrplot(correlationMatrix, tl.cex = 0.5)
 
 #gg_miss_var(correlationMatrix)
@@ -1193,21 +1206,22 @@ splitPerc = .7
 masterAcc = matrix(nrow = iterations, ncol = numks)
 for(j in 1:iterations)
 {
-  trainIndices = sample(1:dim(pd_df)[1],round(splitPerc * dim(pd_df)[1]))
-  train = pd_df[trainIndices,]
-  test = pd_df[-trainIndices,]
-  #dim(train)
-  #dim(test)
-  #length(cl)
-  cl = raw_df[trainIndices, 3]
+  k_inx = sample(1:dim(pd_df)[1],round(splitPerc * dim(pd_df)[1]))
+  
+  k_trn_data <- pd_df[k_inx,]
+  
+  k_tst_data <- pd_df[-k_inx,]
+  
+  cl = raw_df[k_inx, 3]
+  
   for(i in 1:numks)
   {
-    classifications = knn.cv(train, 
-                             #test, 
+    classifications = knn(k_trn_data, 
+                          k_tst_data, 
                              cl, 
                              prob = TRUE, k = i)
     table(classifications,cl)
-    CM = confusionMatrix(table(classifications, cl))
+    CM = confusionMatrix(table(classifications))
     masterAcc[j,i] = CM$overall[1]
   }
   
@@ -1277,3 +1291,55 @@ HRAXGBmodel <- train(Attrition~., data = trainHRA,
 HRAXGBprd <- predict(HRAXGBmodel,testHRA)
 confusionMatrix(HRAXGBprd, testHRA$Attrition)
 XGB.plot <- plot.roc (as.numeric(testHRA$Attrition), as.numeric(HRAXGBprd),lwd=2, type="b", print.auc=TRUE,col ="blue")
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~LINEAR
+
+inx = sample(1:dim(f_df)[1],round(splitPerc * dim(f_df)[1]))
+lm_train_data = f_df[inx,]
+lm_test_data = f_df[-inx,]
+
+
+#lm_splt <- sample(seq(1:(dim(pd_df)[[1]])), (round(dim(pd_df)[[1]] * .7)))
+
+#lm_train_data <- hp_train_data
+#
+#names(lm_train_data)[24] <- "Attrition"
+#
+#lm_test_data <-  hp_test_data
+#
+#names(lm_test_data)[24] <- "Attrition"
+
+# https://github.com/ashwinbaldawa/Employee-Attrition-Prediction/blob/master/Employee%20Attrition.R
+
+cls <- raw_df[t_splt, 3]
+
+#lm_model <- glm(train_labels ~ OverTime_No + MonthlyIncome + StockOptionLevel + Age + 
+#                 JobInvolvement + JobRoleSalesRepresentative + MaritalStatus_Single + 
+#                 YearsWithCurrManager + MaritalStatus_Divorced + YearsInCurrentRole + 
+#                 JobSatisfaction + WorkLifeBalance + EnvironmentSatisfaction + NumCompaniesWorked + 
+#                 JobRole_ResearchDirector + EducationField_Marketing + JobRole_ManufacturingDirector + 
+#                 PercentSalaryHike + YearsSinceLastPromotion + JobRole_SalesExecutive + EducationField_Medical + 
+#                 EducationField_HumanResources + RelationshipSatisfaction, family = "binomial", data=lm_train_data)
+
+lm_model <- lm(train_labels ~ ., data=lm_train_data)
+
+lm_predict <- predict(lm_model, lm_test_data)
+
+confusionMatrix(as.factor(as.numeric(lm_predict > 0.5)), as.factor(lm_test_data$Attrition))
+
+#table(as.numeric(pred > 0.5)
+
+summary(lm_model)
+
+#train_labels ~ OverTime_No + MonthlyIncome + StockOptionLevel + Age + JobInvolvement + JobRoleSalesRepresentative + MaritalStatus_Single + YearsWithCurrManager + MaritalStatus_Divorced + YearsInCurrentRole + JobSatisfaction + WorkLifeBalance + EnvironmentSatisfaction + NumCompaniesWorked + JobRole_ResearchDirector + EducationField_Marketing + JobRole_ManufacturingDirector + PercentSalaryHike + YearsSinceLastPromotion + JobRole_SalesExecutive + EducationField_Medical + EducationField_HumanResources + RelationshipSatisfaction 
+#> 
+
+
+
+
+
+
+
+
+

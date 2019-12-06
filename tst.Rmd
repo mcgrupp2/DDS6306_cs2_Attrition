@@ -120,7 +120,7 @@ raw_df %>%
   ggplot(aes(x = MonthlyIncome, y = ..count.., color = Department, fill = Department)) + 
   theme_minimal() +
   geom_histogram(bins = 50, alpha = 0.85) + 
-  labs(x = "Monthly Income ($)", y = "Number of Employees", title = "Range of Monthly Income")
+  labs(x = "Monthly Income", y = "Number of Employees", title = "Range of Monthly Income")
 
 
 
@@ -145,7 +145,7 @@ raw_df %>%
 raw_df %>% 
   ggplot(aes(x=reorder(JobLevel, MonthlyIncome), y=MonthlyIncome, fill = as.factor(JobLevel))) + 
   geom_boxplot() + 
-  labs(x = "Job Level", y = "Monthly Income  ($)", title = "Ranges of Income by Job Level") +
+  labs(x = "Job Level", y = "Monthly Income", title = "Ranges of Income by Job Level") +
   theme(legend.position = "none")
 
 ```
@@ -157,7 +157,7 @@ raw_df %>%
 raw_df %>% 
   ggplot(aes(x=reorder(JobRole, MonthlyIncome), y=MonthlyIncome, fill = JobRole)) + 
   geom_boxplot()+ 
-  labs(x = "Job Role", y = "Monthly Income", title = "Ranges of Income by Job Role ($)") + 
+  labs(x = "Job Role", y = "Monthly Income", title = "Ranges of Income by Job Role") + 
   theme(axis.text.x = element_text(angle=15, hjust = 1, size = 7), legend.position = "none")
 
 ```
