@@ -1,12 +1,7 @@
 #these could be edits
 
 
-# https://devblogs.microsoft.com/premier-developer/exploring-feature-weights-using-r-and-azure-machine-learning-studio/
-# https://rpubs.com/bpr1989/HRAnalysis
-# https://rstudio-pubs-static.s3.amazonaws.com/397345_30101161deeb4def9bf3570e8899d859.html
-# https://www.kaggle.com/vsdwivedi/a-detailed-study-on-employee-attrition
-# https://rpubs.com/Himeshme/Attrition
-# https://rpubs.com/CJ_09/Emp_Attrition_Final
+
 
 #install.packages("tidyverse")
 #install.packages("naniar")
@@ -901,7 +896,7 @@ xgb.plot.importance(importance_matrix)
 
 #~~~~~~~~~~~~~~~~ HyperTuning XGBoost~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# https://www.hackerearth.com/practice/machine-learning/machine-learning-algorithms/beginners-tutorial-on-xgboost-parameter-tuning-r/tutorial/
+
 
 
 
@@ -1383,7 +1378,7 @@ confint(fit)
 #
 #names(lm_test_data)[24] <- "Attrition"
 
-# https://github.com/ashwinbaldawa/Employee-Attrition-Prediction/blob/master/Employee%20Attrition.R
+
 
 cls <- raw_df[t_splt, 3]
 
