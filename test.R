@@ -296,17 +296,18 @@ attr_df %>%
      aes(attr_count$JobRole, 
        attr_count$JobLevel, 
        label = attr_count_labels$n), 
-     size = 3,
+     size = 3.5,
      nudge_y = 0.1,
      color = 'red') +
   geom_text(data = attr_count, 
      aes(attr_count$JobRole, 
        attr_count$JobLevel, 
        label = paste(attr_count_labels$prop, "%")), 
-     size = 3,
+     size = 3.5,
      nudge_y = -0.1,
-     color = 'blue') +
-  theme(axis.text.x = element_text(angle=45, hjust = 1))
+     color = 'red') +
+  theme(axis.text.x = element_text(angle=45, hjust = 1)) +
+  labs(title="Attrition", xlab="JobRole", ylab="JobLevel")
 
 nttr_df %>% 
   ggplot(aes(x=JobRole, y=JobLevel)) +

@@ -601,50 +601,6 @@ xgpred <- predict(xgmodel,testtask)
 
 ```
 
-```{r}
-attr_comp_data <- read.csv("data/CaseStudy2CompSetNoAttrition.csv")
-
-cm_fs_df <- dummy_cols(attr_comp_data)
-
-cm_f_df <- cbind(cm_fs_df[,2],
-              cm_fs_df[,4],
-              cm_fs_df[,6:7],   
-              cm_fs_df[,11],
-              cm_fs_df[,13:15], 
-              cm_fs_df[,17],    
-              cm_fs_df[,19:21], 
-              cm_fs_df[,24:25],
-              cm_fs_df[,27:60],
-              cm_fs_df[,62:63]) 
-
-names(cm_f_df)[[1]] <- "Age"
-names(cm_f_df)[[2]] <- "DailyRate"
-names(cm_f_df)[[5]] <- "EnvironmentSatisfaction"
-names(cm_f_df)[[6]] <-  "HourlyRate"
-names(cm_f_df)[[9]] <- "JobSatisfaction"
-
-cm_f_df <- cm_f_df %>% mutate(train_labels = NA)
-
-levels(cm_f_df$train_labels) <- c(0,1)
-
-cm_all_scaled_df <- cm_f_df %>% mutate_at(vars(cola), list(~scale(.) %>% as.vector))
-
-cm_trn_lbls <- cm_all_scaled_df$train_labels
-
-cm_pd_mx <- xgb.DMatrix(data = cm_all_scaled_df, label = cm_trn_lbls)
-
-cm_pd_mx <- data.matrix(cm_all_scaled_df)
-
-cm_pred <- predict(xgb_model, cm_pd_mx)
-
-#writing final submission file
-submission_select <- data.frame(empID = cm_fs_df[,1], attr = cm_pred)
-write.csv(submission_select, file = 'attrition_final.csv', row.names = F)
-
-
-```
-
-
 
 
 ```{r, echo=FALSE}
@@ -680,14 +636,13 @@ RMSE
 
 ```
 
-
-```{r, echo=FALSE}
-
-
-
-```
-
 ```{r}
 
+cm_sal_df <- read.csv("data/CaseStudy2CompSetNoSalary.csv")
+
+sal_pred <- predict(fit, data.frame(JobLevel = cm_sal_df[,16], TotalWorkingYears = cm_sal_df[,29]))
+
+submission_select <- data.frame(empID = cm_sal_df$ID, sal_pred = sal_pred)
+write.csv(submission_select, file = 'data/sal_pred.csv', row.names = F)
 
 ```

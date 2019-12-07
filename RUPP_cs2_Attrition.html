@@ -948,7 +948,6 @@ plot(seq(1,numks,1),MeanSpec, type = &quot;l&quot;, main = &quot;Overall Specifi
 <pre><code>## [Tune-x] 10: booster=gbtree; max_depth=3; min_child_weight=1.56; subsample=0.76; colsample_bytree=0.842</code></pre>
 <pre><code>## [Tune-y] 10: acc.test.mean=0.8767962; time: 0.0 min</code></pre>
 <pre><code>## [Tune] Result: booster=gbtree; max_depth=5; min_child_weight=5.43; subsample=0.546; colsample_bytree=0.503 : acc.test.mean=0.8768244</code></pre>
-<pre class="r"><code>#attr_comp_data &lt;- read.csv(&quot;data/&quot;)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -980,6 +979,12 @@ plot(seq(1,numks,1),MeanSpec, type = &quot;l&quot;, main = &quot;Overall Specifi
 ## 0.9081479</code></pre>
 <pre><code>##        1 
 ## 1392.628</code></pre>
+<pre class="r"><code>cm_sal_df &lt;- read.csv(&quot;data/CaseStudy2CompSetNoSalary.csv&quot;)
+
+sal_pred &lt;- predict(fit, data.frame(JobLevel = cm_sal_df[,16], TotalWorkingYears = cm_sal_df[,29]))
+
+submission_select &lt;- data.frame(empID = cm_sal_df$ID, sal_pred = sal_pred)
+write.csv(submission_select, file = 'sal_pred.csv', row.names = F)</code></pre>
 </div>
 </div>
 
