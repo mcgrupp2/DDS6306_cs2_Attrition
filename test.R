@@ -1338,6 +1338,39 @@ inx = sample(1:dim(f_df)[1],round(splitPerc * dim(f_df)[1]))
 lm_train_data = f_df[inx,]
 lm_test_data = f_df[-inx,]
 
+# Scatter plot to inspect general trend
+cars %>% ggplot(aes(x=Weight, y=MPG)) + geom_point() + ggtitle("Weight vs MPG")
+
+# Use lm to create a linear regression model
+fit <- lm(MPG~Weight, data=cars)
+
+# Scatter plot with LR model overlay
+cars %>% ggplot(aes(x=Weight, y=MPG)) + geom_point() + ggtitle("LR Model: Weight vs MPG") + geom_smooth(method = "lm")
+
+# The long way to calculate the p-value
+# Pull out intercept and slope values for later
+beta_0_hat <- fit$coefficients[1]
+beta_1_hat <- fit$coefficients[2]
+
+# Pull out SE for intercept and slope
+SE_beta_0_hat <- summary(fit)$coefficients[1,2]
+SE_beta_1_hat <- summary(fit)$coefficients[2,2]
+
+#Intercept
+tstat <- beta_0_hat/SE_beta_0_hat #beta_0_hat / SE(beta_0_hat)
+pvalue <- (1-pt(tstat,length(cars$MPG)-2)) * 2 # Mult by 2 since 2 sided test
+tstat
+pvalue
+
+#Slope
+tstat <- beta_1_hat/SE_beta_1_hat #beta_1_hat / SE(beta_1_hat)
+pvalue <- (pt(tstat,length(cars)-2)) * 2 # Mult by 2 since 2 sided test
+tstat
+pvalue
+
+# The easy way to get the p-values and confidence intervals
+summary(fit)
+confint(fit)
 
 #lm_splt <- sample(seq(1:(dim(pd_df)[[1]])), (round(dim(pd_df)[[1]] * .7)))
 
@@ -1375,6 +1408,61 @@ summary(lm_model)
 #> 
 
 
+# Scatter plot to inspect general trend
+#cars %>% ggplot(aes(x=Weight, y=MPG)) + geom_point() + ggtitle("Weight vs MPG")
+
+# Use lm to create a linear regression model
+fit <- lm(MonthlyIncome~JobLevel + TotalWorkingYears, data=f_df)
+
+# Scatter plot with LR model overlay
+#cars %>% ggplot(aes(x=Weight, y=MPG)) + geom_point() + ggtitle("LR Model: Weight vs MPG") + geom_smooth(method = "lm")
+
+# The long way to calculate the p-value
+# Pull out intercept and slope values for later
+beta_0_hat <- fit$coefficients[1]
+beta_1_hat <- fit$coefficients[2]
+
+# Pull out SE for intercept and slope
+SE_beta_0_hat <- summary(fit)$coefficients[1,2]
+SE_beta_1_hat <- summary(fit)$coefficients[2,2]
+
+#Intercept
+tstat <- beta_0_hat/SE_beta_0_hat #beta_0_hat / SE(beta_0_hat)
+pvalue <- (1-pt(tstat,length(f_df$MonthlyIncome)-2)) * 2 # Mult by 2 since 2 sided test
+tstat
+pvalue
+
+#Slope
+tstat <- beta_1_hat/SE_beta_1_hat #beta_1_hat / SE(beta_1_hat)
+pvalue <- (pt(tstat,length(f_df$MonthlyIncome)-2)) * 2 # Mult by 2 since 2 sided test
+tstat
+pvalue
+
+# The easy way to get the p-values and confidence intervals
+summary(fit)
+confint(fit)
+
+
+pred_error_sq <- c(0)
+
+for(i in 1:dim(f_df)[1]) {
+  
+  inc_train <- f_df[-i,]
+  
+  fit <- lm(MonthlyIncome ~ JobLevel + TotalWorkingYears, data = inc_train)
+  
+  mi_pred <- predict(fit, data.frame(JobLevel = f_df[i,8], TotalWorkingYears = f_df[i,17])) 
+  
+  pred_error_sq <- pred_error_sq + (f_df[i,10] - mi_pred)^2 
+}
+
+SSE = var(f_df$MonthlyIncome) * (869)
+
+R_squared <- 1 - (pred_error_sq/SSE) 
+R_squared
+
+RMSE = sqrt(pred_error_sq/870)
+RMSE
 
 
 
@@ -1382,3 +1470,38 @@ summary(lm_model)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#writing final submission file
+#submission_select <- data.frame(PassengerId = test$PassengerId, Survived = testClean$Select)
+#write.csv(submission_select, file = 'Titanic_select.csv', row.names = F)

@@ -139,7 +139,7 @@ The company is comprised of three departments as listed above, the departments w
 
 ***
 
-```{r}
+```{r, echo=F}
 
 
 #incomeHist <- 
@@ -328,6 +328,8 @@ f_df <- cbind(fs_df[,1],
               fs_df[,23:25],
               fs_df[,27:60],
               fs_df[,62:63]) 
+
+lm_df <- f_df
 
 # Fix names
 
@@ -548,7 +550,6 @@ names(hp_test_data)[[24]] <- c("Attrition")
 
 ```{r, echo=FALSE, results='hide'}
 
-
 traintask <- makeClassifTask (data = hp_train_data, target = "Attrition")
 
 
@@ -599,16 +600,50 @@ xgmodel <- train(learner = lrn_tune,task = traintask)
 xgpred <- predict(xgmodel,testtask)
 
 ```
+
+```{r}
+attr_comp_data <- read.csv("data/")
+
+
+```
+
+
+
+
 ```{r, echo=FALSE}
 
 confusionMatrix(xgpred$data$response,xgpred$data$truth)
 
 ```
+
+
 ```{r, echo=FALSE}
 
+pred_error_sq <- c(0)
+
+for(i in 1:dim(lm_df)[1]) {
+  
+  inc_train <- lm_df[-i,]
+  
+  fit <- lm(MonthlyIncome ~ JobLevel + TotalWorkingYears, data = inc_train)
+  
+  mi_pred <- predict(fit, data.frame(JobLevel = lm_df[i,8], TotalWorkingYears = lm_df[i,17])) 
+  
+  pred_error_sq <- pred_error_sq + (lm_df[i,10] - mi_pred)^2 
+}
+
+SSE = var(lm_df$MonthlyIncome) * (869)
+
+R_squared <- 1 - (pred_error_sq/SSE) 
+R_squared
+
+RMSE = sqrt(pred_error_sq/870)
+RMSE
 
 
 ```
+
+
 ```{r, echo=FALSE}
 
 
