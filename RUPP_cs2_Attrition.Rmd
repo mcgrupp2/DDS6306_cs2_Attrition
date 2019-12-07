@@ -88,10 +88,10 @@ attr_df <- raw_df %>% filter(Attrition == "Yes")
 
 nttr_df <- raw_df %>% filter(Attrition == "No")
 
-# Redundant Group Summaries
-#summary(attr_df)
+# Group Summaries to spot differences
+summary(attr_df)
 
-#summary(nttr_df)
+summary(nttr_df)
 
 ```
 
@@ -119,12 +119,35 @@ We would like to visualize some data to get a general idea about this company.
 
 ```{r, echo=FALSE}
 
+ord2 <- c("Sales Representative",
+          "Sales Executive",
+       "Research Scientist",
+    "Laboratory Technician",
+"Healthcare Representative",
+   "Manufacturing Director",
+        "Research Director",
+          "Human Resources",
+                  "Manager")
+
+raw_df %>% ggplot(aes(x=JobRole, y=JobLevel, color = Department)) + 
+                  geom_jitter() + scale_x_discrete(limits = ord2) +
+                  theme(axis.text.x = element_text(angle=45, hjust = 1, size = 7))
+
+```
+
+The company is comprised of three departments as listed above, the departments were grouped to visualize professional growth through the company
+
+***
+
+```{r}
+
+
 #incomeHist <- 
-raw_df %>% 
-  ggplot(aes(x = MonthlyIncome, y = ..count.., color = Department, fill = Department)) + 
-  theme_minimal() +
-  geom_histogram(bins = 50, alpha = 0.85) + 
-  labs(x = "Monthly Income", y = "Number of Employees", title = "Range of Monthly Income")
+#raw_df %>% 
+#  ggplot(aes(x = MonthlyIncome, y = ..count.., color = Department, fill = Department)) + 
+#  theme_minimal() +
+#  geom_histogram(bins = 50, alpha = 0.85) + 
+#  labs(x = "Monthly Income", y = "Number of Employees", title = "Range of Monthly Income")
 
 
 
@@ -135,10 +158,7 @@ raw_df %>%
 #
 #raw_df %>% 
 #  ggplot(aes(x=reorder(JobRole, MonthlyIncome), y=MonthlyIncome)) + 
-#  geom_boxplot(aes(fill=Attrition)) 
-#
-
-
+#  geom_boxplot(aes(fill=Attrition))
 ```
 
 ***
@@ -154,6 +174,8 @@ raw_df %>%
 
 ```
 
+There is a postive correlation between job level and monthly income. A higher monthly income *may* decrease the chance of an employee's separation from the company, further analysis to follow.
+
 ***
 
 ```{r, echo=FALSE}
@@ -161,12 +183,125 @@ raw_df %>%
 raw_df %>% 
   ggplot(aes(x=reorder(JobRole, MonthlyIncome), y=MonthlyIncome, fill = JobRole)) + 
   geom_boxplot()+ 
-  labs(x = "Job Role", y = "Monthly Income", title = "Ranges of Income by Job Roe") + 
+  labs(x = "Job Role", y = "Monthly Income", title = "Ranges of Income by Job Role") + 
   theme(axis.text.x = element_text(angle=15, hjust = 1, size = 7), legend.position = "none")
 
 ```
 
+This is supporting the point of income being tied to a specific job role/level. If a higher monthly income is a professional goal for an employee, harnessing an environment in which they feel like they can achieve this would likely lead to this person remaining with the company.
+
+Note on Monthly income:
+It is difficult to use monthly income as a determining factor for why an employee will remain with a company, as we have no "market value" to compare. This company could pay 25% more than all competitors with excellent benefits, and with the given data there is no means to support this evidence. The analysis will proceed with the assumption that the company pays market value for the level of talent. Additionally, a model will be developed to determine what the value for an employee is in terms of monthly salary to leverage with salary negotiations.
+
 ***
+
+```{r, echo=FALSE, results='hide'}
+
+#Visualization Preps
+
+df_count  <-  raw_df %>% count(JobRole, JobLevel)
+
+df_count  <-  df_count %>% mutate(prop = round((df_count$n/sum(df_count$n))*100, 2))
+
+attr_count  <-  attr_df %>% count(JobRole, JobLevel, Department) 
+
+attr_count  <- attr_count %>% mutate(prop = round((attr_count$n/sum(attr_count$n))*100, 2))
+
+attr_count_labels <- attr_count
+
+attr_count_labels[9,] <- c("Manager", 5, "Research & Development", 3, 2.14)
+
+attr_count_labels[10,] <- c("Manager", 5, "Sales", 3, 2.14)
+
+nttr_count  <-  nttr_df %>% count(JobRole, JobLevel, Department) 
+
+nttr_count <- nttr_count %>% mutate(prop = round((nttr_count$n/sum(nttr_count$n))*100, 2))
+
+attr_count_labels[12,] <- c("Manager", 4, "Research & Development", 24, 3.03)
+
+attr_count_labels[13,] <- c("Manager", 5, "Sales", 3, 2.14)
+
+attr_count_labels[9,] <- c("Manager", 5, "Research & Development", 3, 2.14)
+
+roleMeans <- aggregate(raw_df[, "JobLevel"], list(raw_df$JobRole), mean) %>% arrange(x)
+
+dept_list <- as.character(unique(raw_df$Department))
+
+ord <- as.character(roleMeans[[1]])
+
+```
+
+```{r}
+
+raw_df %>% 
+  ggplot(aes(x=JobRole, y=JobLevel)) +
+  geom_count() + scale_x_discrete(limits = ord) +
+  geom_text(data = df_count, 
+    aes(df_count$JobRole, 
+        df_count$JobLevel, 
+        label = df_count$n), 
+    size = 3,
+    nudge_y = 0.1,
+    color = 'red') +
+  geom_text(data = df_count, 
+    aes(df_count$JobRole, 
+        df_count$JobLevel, 
+        label = paste(df_count$prop, "%")), 
+    size = 3,
+    nudge_y = -0.1,
+    color = 'blue') +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+```
+
+```{r}
+attr_df %>% 
+  ggplot(aes(x=JobRole, y=JobLevel)) +
+  geom_count(na.rm = TRUE) + scale_x_discrete(limits = ord) +
+  geom_text(data = attr_count, 
+     aes(attr_count$JobRole, 
+       attr_count$JobLevel, 
+       label = attr_count_labels$n), 
+     size = 3,
+     nudge_y = 0.1,
+     color = 'red') +
+  geom_text(data = attr_count, 
+     aes(attr_count$JobRole, 
+       attr_count$JobLevel, 
+       label = paste(attr_count_labels$prop, "%")), 
+     size = 3,
+     nudge_y = -0.1,
+     color = 'blue') +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))
+```
+
+
+```{r}
+nttr_df %>% 
+  ggplot(aes(x=JobRole, y=JobLevel)) +
+  geom_count(na.rm = TRUE) + scale_x_discrete(limits = ord) +
+  geom_text(data = nttr_count, 
+    aes(nttr_count$JobRole, 
+        nttr_count$JobLevel, 
+       label = nttr_count$n), 
+    size = 3,
+    nudge_y = 0.1,
+    color = 'red') +
+  geom_text(data = nttr_count, 
+    aes(nttr_count$JobRole, 
+        nttr_count$JobLevel, 
+        label = paste(nttr_count$prop, "%")), 
+    size = 3,
+    nudge_y = -0.1,
+    color = 'blue') +
+  theme(axis.text.x = element_text(angle=45, hjust = 1))
+
+
+```
+
+
+
+
 
 
 
@@ -476,6 +611,11 @@ confusionMatrix(xgpred$data$response,xgpred$data$truth)
 ```
 ```{r, echo=FALSE}
 
+
+
+```
+
+```{r}
 
 
 ```
