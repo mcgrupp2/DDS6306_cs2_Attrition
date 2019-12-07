@@ -3,7 +3,7 @@
 #### DDS6306
 #### CS2
 
-video link:
+video link: https://youtu.be/H_iJR0IX5-4 
 
 
 Summary:
