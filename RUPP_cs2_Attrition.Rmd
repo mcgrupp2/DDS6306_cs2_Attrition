@@ -231,7 +231,7 @@ ord <- as.character(roleMeans[[1]])
 
 ```
 
-```{r}
+```{r, echo=FALSE}
 
 raw_df %>% 
   ggplot(aes(x=JobRole, y=JobLevel)) +
@@ -253,6 +253,8 @@ raw_df %>%
   theme(axis.text.x = element_text(angle=45, hjust = 1))
 
 ```
+The above graph shows that number of employees in each department.
+***
 
 ```{r}
 attr_df %>% 
@@ -275,37 +277,17 @@ attr_df %>%
   theme(axis.text.x = element_text(angle=45, hjust = 1))
 ```
 
-
-```{r}
-nttr_df %>% 
-  ggplot(aes(x=JobRole, y=JobLevel)) +
-  geom_count(na.rm = TRUE) + scale_x_discrete(limits = ord) +
-  geom_text(data = nttr_count, 
-    aes(nttr_count$JobRole, 
-        nttr_count$JobLevel, 
-       label = nttr_count$n), 
-    size = 3,
-    nudge_y = 0.1,
-    color = 'red') +
-  geom_text(data = nttr_count, 
-    aes(nttr_count$JobRole, 
-        nttr_count$JobLevel, 
-        label = paste(nttr_count$prop, "%")), 
-    size = 3,
-    nudge_y = -0.1,
-    color = 'blue') +
-  theme(axis.text.x = element_text(angle=45, hjust = 1))
+The above graph shows the employees that have left the company. We can see from this visualization that it seems like the lower level employees are leaving in the greatest numbers.
 
 
-```
+***
+
+Now that we have an idea of who it is that is leaving, it is time to investigate possible reasons.
 
 
+```{r dataPrep, echo=FALSE, results='hide'}
 
-
-
-
-
-```{r dataPrep}
+# Data prep steps for modeling
 
 set.seed(22)
 
@@ -343,7 +325,7 @@ names(f_df)[[9]] <- "JobSatisfaction"
 
 ***
 
-```{r featureScaling}
+```{r featureScaling, echo=FALSE, results='hide'}
 
 #~~~~~~~~~~~~~~~~Scaling features
 
@@ -359,7 +341,7 @@ all_scaled_df <- f_df %>% mutate_at(vars(cola), list(~scale(.) %>% as.vector))
 
 ***
 
-```{r Remove Redundant Features + Corrplot}
+```{r Remove Redundant Features + Corrplot, echo=FALSE, results='hide'}
 
 #~~~~~~~~~~~~~~~~~~~~~~~Remove Redundant Features + Corrplot
 
@@ -377,7 +359,7 @@ f_df <- all_scaled_df[,-(highlyCorrelated)]
 
 ***
 
-```{r featureSelection}
+```{r featureSelection, echo=FALSE, results='hide'}
 
 #~~~~~~~~~~~~~~~~~~~~Feature Selection (Automatic)------LONG LOAD
 
@@ -448,8 +430,13 @@ max(MeanSpec)
 
 ```
 
+From the graphs and data above, we can select the best number of neighbors for knn.
 
-```{r, echo=FALSE}
+***
+
+
+
+```{r}
 
 pd_mx <- data.matrix(pd_df)
 
@@ -482,26 +469,45 @@ xgb_model <- xgboost(data = train_dmx,
                        print_every_n = 10,
                        scale_pos_weight = negative_cases/positive_cases)
 
-# generate predictions for our held-out testing data
+
 pred <- predict(xgb_model, dtest_dmx)
 
 confusionMatrix(table(as.numeric(pred > 0.5), x_test_labels))
 
-# get & print the classification error
+
 err <- mean(as.numeric(pred > 0.5) != x_test_labels)
 print(paste("test-auc=", err))
 
 
 feature_importance <- xgb.importance(names(pd_mx), model = xgb_model)
 
-# and plot it!
+
 xgb.plot.importance(feature_importance)
 
 
 ```
 
+The xgboost model above has evaluated what features contribute to employee attrition.
 
-```{r, echo=FALSE}
+From the feature importance we can see the top five factors leading to attrition according to this model are: Monthly Income, OverTime, Age, StockOptions, Percent Salary Hike and Job Satisfaction.
+
+```{r}
+
+
+ynFlip <-  factor(raw_df$Attrition,levels(raw_df$Attrition)[c(2, 1)])
+
+raw_df %>% ggplot(aes(Attrition, Age, fill= ynFlip)) + geom_boxplot()
+
+raw_df %>% ggplot(aes(Attrition, MonthlyIncome, fill= ynFlip)) + geom_boxplot()
+
+raw_df %>% ggplot(aes(OverTime,fill = ynFlip)) + geom_bar()
+
+raw_df %>% ggplot(aes(StockOptionLevel,fill = ynFlip))+geom_bar()
+
+
+```
+
+```{r, echo=FALSE, results='hide'}
 
 #~~~~~~~~~~~~~~~~ HyperTuning XGBoost~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -562,24 +568,23 @@ lrn$par.vals <- list( objective="binary:logistic",
                       nrounds=100L, 
                       eta=0.1)
 
-#set parameter space
+
 params <- makeParamSet(makeDiscreteParam("booster",values = c("gbtree","gblinear")), 
                        makeIntegerParam("max_depth",lower = 3L,upper = 10L), 
                        makeNumericParam("min_child_weight",lower = 1L,upper = 10L), 
                        makeNumericParam("subsample",lower = 0.5,upper = 1), 
                        makeNumericParam("colsample_bytree",lower = 0.5,upper = 1))
 
-#set resampling strategy
+
 rdesc <- makeResampleDesc("CV",
                            stratify = T,
                            iters=10L)
 
 
 
-#search strategy
 ctrl <- makeTuneControlRandom(maxit = 10L)
 
-#parameter tuning
+
 mytune <- tuneParams(learner = lrn, 
                      task = traintask, 
                      resampling = rdesc, 
@@ -587,7 +592,7 @@ mytune <- tuneParams(learner = lrn,
                      par.set = params, 
                      control = ctrl, 
                      show.info = T)
-#mytune$y
+
 
 
 #set hyperparameters
@@ -599,6 +604,8 @@ xgmodel <- train(learner = lrn_tune,task = traintask)
 #predict model
 xgpred <- predict(xgmodel,testtask)
 
+# Tuned xgboost model performed the best by far in testing.
+
 ```
 
 
@@ -609,6 +616,16 @@ confusionMatrix(xgpred$data$response,xgpred$data$truth)
 
 ```
 
+The above confusion matrix shows that the tuned XGboost model performed better than a knn.
+
+
+With the features that can lead to employee attrition analysed, the company can identify factors that can lead to attrition. With the level of talent that is exiting the company, it may been more prudent to recruit new talent rather than retain low level.
+
+***
+
+### Now that employee attrition has been evaluated, a linear model will be created to assist with employee pay scale. 
+
+The correlationMatrix utilized in previous code blocks was used to find features highly related to MonthlyIncome. Exploiting features that have a high correlation with this value, should make our predictions more accurate.
 
 ```{r, echo=FALSE}
 
@@ -636,6 +653,8 @@ RMSE
 
 ```
 
+***
+
 ```{r}
 
 cm_sal_df <- read.csv("data/CaseStudy2CompSetNoSalary.csv")
@@ -646,3 +665,5 @@ submission_select <- data.frame(empID = cm_sal_df$ID, sal_pred = sal_pred)
 write.csv(submission_select, file = 'data/sal_pred.csv', row.names = F)
 
 ```
+
+With this linear model, the company will now be able to generate a pay scale to stay competitive in the workforce.
